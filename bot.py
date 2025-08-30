@@ -11,8 +11,7 @@ from telegram.ext import (
 from db import init_db
 from handlers.start import start_command, main_menu_callback
 from handlers.expense import (
-    add_expense_callback, currency_callback,
-    handle_amount_input, profile_callback
+    add_expense_callback, handle_amount_input
 )
 from handlers.messages import handle_text_message, handle_shopping_category_callback
 from handlers.shopping import (
@@ -21,8 +20,7 @@ from handlers.shopping import (
     toggle_item_callback, remove_item_callback
 )
 from handlers.reports import (
-    report_callback, balances_callback, exchange_rates_callback,
-    close_month_callback, profiles_callback
+    report_callback, balances_callback
 )
 from handlers.commands import set_rate_command
 
@@ -51,13 +49,10 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(add_expense_callback, pattern="^add_expense$"))
     application.add_handler(CallbackQueryHandler(handle_shopping_category_callback, pattern="^category_"))
 
-    application.add_handler(CallbackQueryHandler(profile_callback, pattern="^profile_"))
-    
     # Shopping handlers
     application.add_handler(CallbackQueryHandler(shopping_list_callback, pattern="^shopping_list$"))
     application.add_handler(CallbackQueryHandler(add_shopping_item_callback, pattern="^add_shopping_item$"))
     application.add_handler(CallbackQueryHandler(list_shopping_items_callback, pattern="^list_shopping_items$"))
-
     application.add_handler(CallbackQueryHandler(remove_shopping_item_callback, pattern="^remove_shopping_item$"))
     application.add_handler(CallbackQueryHandler(toggle_item_callback, pattern="^toggle_"))
     application.add_handler(CallbackQueryHandler(remove_item_callback, pattern="^remove_"))
@@ -65,9 +60,6 @@ def setup_handlers(application: Application):
     # Report handlers
     application.add_handler(CallbackQueryHandler(report_callback, pattern="^report$"))
     application.add_handler(CallbackQueryHandler(balances_callback, pattern="^balances$"))
-    application.add_handler(CallbackQueryHandler(exchange_rates_callback, pattern="^exchange_rates$"))
-    application.add_handler(CallbackQueryHandler(close_month_callback, pattern="^close_month$"))
-    application.add_handler(CallbackQueryHandler(profiles_callback, pattern="^profiles$"))
     
     # Message handlers for text input
     application.add_handler(MessageHandler(

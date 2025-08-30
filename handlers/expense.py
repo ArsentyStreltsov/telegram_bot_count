@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
-from utils.keyboards import category_keyboard, currency_keyboard, profile_selection_keyboard, back_keyboard
+from utils.keyboards import category_keyboard, back_keyboard
 from utils.texts import get_category_name, get_currency_name, format_amount
 from services.expense_service import ExpenseService
 from models import ExpenseCategory, Currency, Profile
@@ -88,76 +88,70 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await query.edit_message_text(text, reply_markup=keyboard)
     else:
-        user_states[user_id]['step'] = 'profile'
-        
+        # Create expense directly without profile selection
         # Get database session
         db = next(get_db())
         
         try:
-            # Get available profiles
-            profiles = db.query(Profile).all()
+            # Get default profile (Home) or create one if doesn't exist
+            profile = db.query(Profile).filter(Profile.name == "Home").first()
+            if not profile:
+                # Create default profile if it doesn't exist
+                profile = Profile(name="Home", is_default=True)
+                db.add(profile)
+                db.commit()
+                db.refresh(profile)
             
-            if not profiles:
-                await query.edit_message_text(
-                    "❌ Нет доступных профилей разделения. Обратитесь к администратору."
-                )
-                return
+            # Get user
+            user = BaseHandler.get_or_create_user(db, update.effective_user)
             
-            # Show profile selection with category description
+            # Store values before clearing state
             amount = user_states[user_id]['amount']
             currency = user_states[user_id]['currency']
+            custom_category_name = user_states[user_id].get('custom_category_name')
             
-            from services.special_split import get_category_description
-            category_desc = get_category_description(category)
+            # Create expense with special splitting logic
+            from services.special_split import calculate_special_split
             
-            text = f"💰 Сумма: {format_amount(amount, currency)}\n"
-            text += f"📂 Категория: {get_category_name(category)}\n"
-            text += f"📋 {category_desc}\n\n"
-            text += "👥 Выберите профиль разделения:"
+            # Calculate allocations based on category
+            allocations = calculate_special_split(db, amount, category, profile.id)
             
-            keyboard = profile_selection_keyboard(profiles)
+            # Create expense
+            expense = ExpenseService.create_expense(
+                db=db,
+                amount=amount,
+                currency=currency,
+                category=category,
+                payer_id=user.id,
+                profile_id=profile.id,
+                allocations=allocations,
+                custom_category_name=custom_category_name
+            )
+            
+            # Clear user state
+            del context.bot_data['user_states'][user_id]
+            
+            # Show success message
+            text = f"✅ Расход добавлен!\n\n"
+            if custom_category_name:
+                text += f"📂 Категория: {get_category_name(category)}: {custom_category_name}\n"
+            else:
+                text += f"📂 Категория: {get_category_name(category)}\n"
+            text += f"💱 Валюта: {get_currency_name(currency)}\n"
+            text += f"💰 Сумма: {format_amount(amount, currency)}\n"
+            text += f"💳 Оплатил: {BaseHandler.get_user_name(user)}"
+            
+            from utils.keyboards import back_keyboard
+            keyboard = back_keyboard("main_menu")
             
             await query.edit_message_text(text, reply_markup=keyboard)
             
         except Exception as e:
-            await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+            await query.edit_message_text(f"❌ Ошибка при создании расхода: {str(e)}")
         finally:
             db.close()
 
-async def currency_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle currency selection"""
-    query = update.callback_query
-    await query.answer()
-    
-    # Parse currency from callback data
-    callback_data = query.data
-    if not callback_data.startswith("currency_"):
-        return
-    
-    currency_value = callback_data.replace("currency_", "")
-    try:
-        currency = Currency(currency_value)
-    except ValueError:
-        await query.edit_message_text("❌ Неверная валюта")
-        return
-    
-    # Update user state
-    user_id = update.effective_user.id
-    user_states = context.bot_data.get('user_states', {})
-    if user_id in user_states and user_states[user_id]['action'] == 'add_expense':
-        user_states[user_id]['currency'] = currency
-        
-        # Ask for amount
-        category = user_states[user_id]['category']
-        text = f"📂 Категория: {get_category_name(category)}\n"
-        text += f"💱 Валюта: {get_currency_name(currency)}\n\n"
-        text += "💰 Введите сумму:"
-        
-        keyboard = back_keyboard("add_expense")
-        
-        await query.edit_message_text(text, reply_markup=keyboard)
-    else:
-        await query.edit_message_text("❌ Ошибка состояния")
+
 
 async def handle_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle amount input"""
@@ -190,86 +184,4 @@ async def handle_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     await update.message.reply_text(text, reply_markup=keyboard)
 
-async def profile_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle profile selection"""
-    query = update.callback_query
-    await query.answer()
-    
-    # Parse profile ID from callback data
-    callback_data = query.data
-    if not callback_data.startswith("profile_"):
-        return
-    
-    try:
-        profile_id = int(callback_data.replace("profile_", ""))
-    except ValueError:
-        await query.edit_message_text("❌ Неверный профиль")
-        return
-    
-    user_id = update.effective_user.id
-    user_states = context.bot_data.get('user_states', {})
-    
-    if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
-        await query.edit_message_text("❌ Ошибка состояния")
-        return
-    
-    # Get database session
-    db = next(get_db())
-    
-    try:
-        # Get profile
-        profile = db.query(Profile).filter(Profile.id == profile_id).first()
-        if not profile:
-            await query.edit_message_text("❌ Профиль не найден")
-            return
-        
-        # Get user
-        user = BaseHandler.get_or_create_user(db, update.effective_user)
-        
-        # Store values before clearing state
-        amount = user_states[user_id]['amount']
-        currency = user_states[user_id]['currency']
-        category = user_states[user_id]['category']
-        custom_category_name = user_states[user_id].get('custom_category_name')
-        
-        # Create expense with special splitting logic
-        from services.special_split import calculate_special_split
-        
-        # Calculate allocations based on category
-        allocations = calculate_special_split(db, amount, category, profile_id)
-        
-        # Create expense
-        expense = ExpenseService.create_expense(
-            db=db,
-            amount=amount,
-            currency=currency,
-            category=category,
-            payer_id=user.id,
-            profile_id=profile_id,
-            allocations=allocations,
-            custom_category_name=custom_category_name
-        )
-        
-        # Clear user state
-        del context.bot_data['user_states'][user_id]
-        
-        # Show success message
-        
-        text = f"✅ Расход добавлен!\n\n"
-        if custom_category_name:
-            text += f"📂 Категория: {get_category_name(category)}: {custom_category_name}\n"
-        else:
-            text += f"📂 Категория: {get_category_name(category)}\n"
-        text += f"💱 Валюта: {get_currency_name(currency)}\n"
-        text += f"💰 Сумма: {format_amount(amount, currency)}\n"
-        text += f"👥 Профиль: {profile.name}\n"
-        text += f"💳 Оплатил: {BaseHandler.get_user_name(user)}"
-        
-        keyboard = back_keyboard("main_menu")
-        
-        await query.edit_message_text(text, reply_markup=keyboard)
-        
-    except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка при создании расхода: {str(e)}")
-    finally:
-        db.close()
+

@@ -14,13 +14,6 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("📊 Отчет", callback_data="report"),
             InlineKeyboardButton("💳 Балансы", callback_data="balances")
-        ],
-        [
-            InlineKeyboardButton("💱 Курсы валют", callback_data="exchange_rates"),
-            InlineKeyboardButton("📅 Закрыть месяц", callback_data="close_month")
-        ],
-        [
-            InlineKeyboardButton("👥 Профили", callback_data="profiles")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -46,16 +39,7 @@ def category_keyboard() -> InlineKeyboardMarkup:
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
-def currency_keyboard() -> InlineKeyboardMarkup:
-    """Currency selection keyboard"""
-    keyboard = [
-        [
-            InlineKeyboardButton("🇸🇪 SEK", callback_data="currency_SEK"),
-            InlineKeyboardButton("🇪🇺 EUR", callback_data="currency_EUR")
-        ],
-        [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+
 
 def shopping_actions_keyboard() -> InlineKeyboardMarkup:
     """Shopping list actions keyboard"""
@@ -71,20 +55,7 @@ def shopping_actions_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-def profile_selection_keyboard(profiles) -> InlineKeyboardMarkup:
-    """Profile selection keyboard"""
-    keyboard = []
-    
-    for profile in profiles:
-        keyboard.append([
-            InlineKeyboardButton(
-                f"👥 {profile.name}" + (" (по умолчанию)" if profile.is_default else ""),
-                callback_data=f"profile_{profile.id}"
-            )
-        ])
-    
-    keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
-    return InlineKeyboardMarkup(keyboard)
+
 
 def confirmation_keyboard(action: str) -> InlineKeyboardMarkup:
     """Confirmation keyboard"""
