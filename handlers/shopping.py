@@ -50,8 +50,8 @@ async def list_shopping_items_callback(update: Update, context: ContextTypes.DEF
     db = next(get_db())
     
     try:
-        # Get shopping items
-        items = ShoppingService.get_items(db, checked_only=False, limit=20)
+        # Get shopping items - get ALL items (both checked and unchecked)
+        items = ShoppingService.get_items(db, checked_only=None, limit=20)
         
         if not items:
             text = "🛒 Список покупок пуст"
@@ -78,8 +78,8 @@ async def remove_shopping_item_callback(update: Update, context: ContextTypes.DE
     db = next(get_db())
     
     try:
-        # Get shopping items
-        items = ShoppingService.get_items(db, checked_only=False, limit=20)
+        # Get shopping items - get ALL items (both checked and unchecked)
+        items = ShoppingService.get_items(db, checked_only=None, limit=20)
         
         if not items:
             text = "🛒 Список покупок пуст"
@@ -143,8 +143,8 @@ async def toggle_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         
         db.commit()
         
-        # Show updated list
-        items = ShoppingService.get_items(db, checked_only=False, limit=20)
+        # Show updated list - get ALL items (both checked and unchecked)
+        items = ShoppingService.get_items(db, checked_only=None, limit=20)
         
         if not items:
             text = "🛒 Список покупок пуст"
@@ -187,8 +187,8 @@ async def remove_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             await query.edit_message_text("❌ Товар не найден")
             return
         
-        # Show updated list
-        items = ShoppingService.get_items(db, checked_only=False, limit=20)
+        # Show updated list - get ALL items (both checked and unchecked)
+        items = ShoppingService.get_items(db, checked_only=None, limit=20)
         
         if not items:
             text = "🛒 Список покупок пуст"
