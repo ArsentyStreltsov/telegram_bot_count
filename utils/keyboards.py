@@ -62,10 +62,9 @@ def shopping_actions_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton("➕ Добавить товар", callback_data="add_shopping_item"),
-            InlineKeyboardButton("🛒 Идти за покупками", callback_data="go_shopping")
+            InlineKeyboardButton("📋 Список товаров", callback_data="list_shopping_items")
         ],
         [
-            InlineKeyboardButton("📋 Список товаров", callback_data="list_shopping_items"),
             InlineKeyboardButton("🗑 Удалить товар", callback_data="remove_shopping_item")
         ],
         [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]

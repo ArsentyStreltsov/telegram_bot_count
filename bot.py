@@ -17,9 +17,8 @@ from handlers.expense import (
 from handlers.messages import handle_text_message, handle_shopping_category_callback
 from handlers.shopping import (
     shopping_list_callback, add_shopping_item_callback,
-    list_shopping_items_callback, go_shopping_callback,
-    remove_shopping_item_callback, toggle_item_callback,
-    remove_item_callback
+    list_shopping_items_callback, remove_shopping_item_callback, 
+    toggle_item_callback, remove_item_callback
 )
 from handlers.reports import (
     report_callback, balances_callback, exchange_rates_callback,
@@ -58,7 +57,7 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(shopping_list_callback, pattern="^shopping_list$"))
     application.add_handler(CallbackQueryHandler(add_shopping_item_callback, pattern="^add_shopping_item$"))
     application.add_handler(CallbackQueryHandler(list_shopping_items_callback, pattern="^list_shopping_items$"))
-    application.add_handler(CallbackQueryHandler(go_shopping_callback, pattern="^go_shopping$"))
+
     application.add_handler(CallbackQueryHandler(remove_shopping_item_callback, pattern="^remove_shopping_item$"))
     application.add_handler(CallbackQueryHandler(toggle_item_callback, pattern="^toggle_"))
     application.add_handler(CallbackQueryHandler(remove_item_callback, pattern="^remove_"))

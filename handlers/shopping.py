@@ -67,44 +67,7 @@ async def list_shopping_items_callback(update: Update, context: ContextTypes.DEF
     finally:
         db.close()
 
-async def go_shopping_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle go shopping button"""
-    query = update.callback_query
-    await query.answer()
-    
-    # Get database session
-    db = next(get_db())
-    
-    try:
-        # Get unchecked items
-        items = ShoppingService.get_items(db, checked_only=False, limit=20)
-        
-        if not items:
-            text = "🛒 Нет товаров для покупки"
-            keyboard = back_keyboard("shopping_list")
-        else:
-            text = "🛒 Выберите купленные товары:\n\n"
-            for i, item in enumerate(items, 1):
-                text += f"{i}. {item.title}\n"
-            
-            # Store items for selection
-            user_id = update.effective_user.id
-            if 'user_states' not in context.bot_data:
-                context.bot_data['user_states'] = {}
-            
-            context.bot_data['user_states'][user_id] = {
-                'action': 'go_shopping',
-                'items': items
-            }
-            
-            keyboard = back_keyboard("shopping_list")
-        
-        await query.edit_message_text(text, reply_markup=keyboard)
-        
-    except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
-    finally:
-        db.close()
+
 
 async def remove_shopping_item_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle remove shopping item button"""
@@ -249,10 +212,11 @@ def create_shopping_items_keyboard(items):
     keyboard = []
     
     for item in items:
-        status = "✅" if item.is_checked else "⭕"
-        button_text = f"{status} {item.title}"
-        callback_data = f"toggle_{item.id}"
-        keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
+        # Показываем кнопку только для неотмеченных товаров
+        if not item.is_checked:
+            button_text = f"⭕ {item.title}"
+            callback_data = f"toggle_{item.id}"
+            keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="shopping_list")])
     return InlineKeyboardMarkup(keyboard)

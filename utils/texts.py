@@ -98,16 +98,11 @@ def format_shopping_list(items: List, page: int = 1, total_pages: int = 1) -> st
     if not items:
         return "🛒 Список покупок пуст"
     
-    text = f"🛒 Список покупок (стр. {page}/{total_pages}):\n\n"
+    text = "🛒 Список покупок:\n\n"
     
     for i, item in enumerate(items, 1):
         status = "✅" if item.is_checked else "⭕"
-        category = get_category_name(item.category)
         text += f"{i}. {status} {item.title}\n"
-        text += f"   📂 {category}"
-        if item.note:
-            text += f" | 📝 {item.note}"
-        text += "\n\n"
     
     return text
 
