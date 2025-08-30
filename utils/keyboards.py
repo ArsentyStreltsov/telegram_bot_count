@@ -102,3 +102,17 @@ def pagination_keyboard(
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
+
+def currency_selection_keyboard() -> InlineKeyboardMarkup:
+    """Currency selection keyboard"""
+    keyboard = [
+        [
+            InlineKeyboardButton("🇸🇪 SEK", callback_data="currency_SEK"),
+            InlineKeyboardButton("🇪🇺 EUR", callback_data="currency_EUR")
+        ],
+        [
+            InlineKeyboardButton("🇷🇺 RUB", callback_data="currency_RUB")
+        ],
+        [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]
+    ]
+    return InlineKeyboardMarkup(keyboard)

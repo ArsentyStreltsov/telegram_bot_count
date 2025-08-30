@@ -11,7 +11,7 @@ from telegram.ext import (
 from db import init_db
 from handlers.start import start_command, main_menu_callback
 from handlers.expense import (
-    add_expense_callback, handle_amount_input
+    add_expense_callback, handle_amount_input, currency_callback
 )
 from handlers.messages import handle_text_message, handle_shopping_category_callback
 from handlers.shopping import (
@@ -47,6 +47,7 @@ def setup_handlers(application: Application):
     # Callback query handlers
     application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^main_menu$"))
     application.add_handler(CallbackQueryHandler(add_expense_callback, pattern="^add_expense$"))
+    application.add_handler(CallbackQueryHandler(currency_callback, pattern="^currency_"))
     application.add_handler(CallbackQueryHandler(handle_shopping_category_callback, pattern="^category_"))
 
     # Shopping handlers

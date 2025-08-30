@@ -18,7 +18,8 @@ def get_currency_name(currency: Currency) -> str:
     """Get Russian name for currency"""
     names = {
         Currency.SEK: "SEK (шведские кроны)",
-        Currency.EUR: "EUR (евро)"
+        Currency.EUR: "EUR (евро)",
+        Currency.RUB: "RUB (рубли)"
     }
     return names.get(currency, currency.value)
 
@@ -26,7 +27,8 @@ def format_amount(amount: float, currency: Currency) -> str:
     """Format amount with currency symbol"""
     symbols = {
         Currency.SEK: "kr",
-        Currency.EUR: "€"
+        Currency.EUR: "€",
+        Currency.RUB: "₽"
     }
     symbol = symbols.get(currency, currency.value)
     return f"{amount:.2f} {symbol}"
@@ -112,11 +114,9 @@ def get_welcome_message(user_name: str) -> str:
 
 Добро пожаловать в бот для отслеживания семейных расходов!
 
-🔧 Возможности:
+Возможности:
 • 📝 Общий список покупок
 • 💰 Отслеживание расходов по категориям
-• 💱 Поддержка EUR/SEK с настраиваемыми курсами
-• 👥 Профили разделения расходов
 • 📊 Месячные отчеты и балансы
 
 Выберите действие в главном меню:"""

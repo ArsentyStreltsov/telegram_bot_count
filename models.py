@@ -15,6 +15,7 @@ class Currency(enum.Enum):
     """Supported currencies"""
     SEK = "SEK"
     EUR = "EUR"
+    RUB = "RUB"
 
 class ExpenseCategory(enum.Enum):
     """Expense categories"""

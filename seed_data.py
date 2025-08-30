@@ -40,21 +40,39 @@ def seed_data():
             db.add(profile)
             print(f"Created profile: {profile_data['name']}")
         
-        # Set default exchange rate
-        existing_rate = db.query(ExchangeRate).filter(
-            ExchangeRate.from_currency == Currency.EUR,
-            ExchangeRate.to_currency == Currency.SEK
-        ).first()
+        # Set default exchange rates
+        exchange_rates_data = [
+            {
+                "from_currency": Currency.EUR,
+                "to_currency": Currency.SEK,
+                "rate": 11.30,
+                "description": "EUR/SEK"
+            },
+            {
+                "from_currency": Currency.RUB,
+                "to_currency": Currency.SEK,
+                "rate": 0.12,  # Примерный курс: 1 RUB = 0.12 SEK
+                "description": "RUB/SEK"
+            }
+        ]
         
-        if not existing_rate:
-            rate = ExchangeRate(
-                from_currency=Currency.EUR,
-                to_currency=Currency.SEK,
-                rate=11.30,
-                valid_from=datetime.utcnow()
-            )
-            db.add(rate)
-            print("Set default EUR/SEK rate: 11.30")
+        for rate_data in exchange_rates_data:
+            existing_rate = db.query(ExchangeRate).filter(
+                ExchangeRate.from_currency == rate_data["from_currency"],
+                ExchangeRate.to_currency == rate_data["to_currency"]
+            ).first()
+            
+            if not existing_rate:
+                rate = ExchangeRate(
+                    from_currency=rate_data["from_currency"],
+                    to_currency=rate_data["to_currency"],
+                    rate=rate_data["rate"],
+                    valid_from=datetime.utcnow()
+                )
+                db.add(rate)
+                print(f"Set default {rate_data['description']} rate: {rate_data['rate']}")
+            else:
+                print(f"Rate {rate_data['description']} already exists")
         
         db.commit()
         print("Seed data created successfully!")

@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
-from utils.keyboards import category_keyboard, back_keyboard
+from utils.keyboards import category_keyboard, back_keyboard, currency_selection_keyboard
 from utils.texts import get_category_name, get_currency_name, format_amount
 from services.expense_service import ExpenseService
 from models import ExpenseCategory, Currency, Profile
@@ -26,19 +26,19 @@ async def add_expense_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         # Get or create user
         user = BaseHandler.get_or_create_user(db, update.effective_user)
         
-        # Set user state to ask for amount first
+        # Set user state to ask for currency first
         user_id = update.effective_user.id
         if 'user_states' not in context.bot_data:
             context.bot_data['user_states'] = {}
         
         context.bot_data['user_states'][user_id] = {
             'action': 'add_expense',
-            'step': 'amount'
+            'step': 'currency'
         }
         
-        # Ask for amount first
-        text = "💰 Введите сумму расхода в кронах (SEK):\n\nПример: 150.50"
-        keyboard = back_keyboard("main_menu")
+        # Ask for currency first
+        text = "💱 Выберите валюту:"
+        keyboard = currency_selection_keyboard()
         
         await query.edit_message_text(text, reply_markup=keyboard)
         
@@ -170,18 +170,55 @@ async def handle_amount_input(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return
     
-    # Update user state with amount and set currency to SEK by default
+    # Update user state with amount
     user_states[user_id]['amount'] = amount
-    user_states[user_id]['currency'] = Currency.SEK
     user_states[user_id]['step'] = 'category'
     
     # Show category selection
-    text = f"💰 Сумма: {format_amount(amount, Currency.SEK)}\n\n"
+    currency = user_states[user_id]['currency']
+    text = f"💱 Валюта: {get_currency_name(currency)}\n"
+    text += f"💰 Сумма: {format_amount(amount, currency)}\n\n"
     text += "📂 Выберите категорию расхода:"
     
     from utils.keyboards import category_keyboard
     keyboard = category_keyboard()
     
     await update.message.reply_text(text, reply_markup=keyboard)
+
+async def currency_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle currency selection"""
+    query = update.callback_query
+    await query.answer()
+    
+    # Parse currency from callback data
+    callback_data = query.data
+    if not callback_data.startswith("currency_"):
+        return
+    
+    currency_value = callback_data.replace("currency_", "")
+    try:
+        currency = Currency(currency_value)
+    except ValueError:
+        await query.edit_message_text("❌ Неверная валюта")
+        return
+    
+    # Update user state with currency
+    user_id = update.effective_user.id
+    user_states = context.bot_data.get('user_states', {})
+    
+    if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
+        await query.edit_message_text("❌ Ошибка состояния")
+        return
+    
+    user_states[user_id]['currency'] = currency
+    user_states[user_id]['step'] = 'amount'
+    
+    # Ask for amount
+    text = f"💱 Валюта: {get_currency_name(currency)}\n\n"
+    text += "💰 Введите сумму:"
+    
+    keyboard = back_keyboard("add_expense")
+    
+    await query.edit_message_text(text, reply_markup=keyboard)
 
 
