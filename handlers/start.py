@@ -63,3 +63,55 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     finally:
         db.close()
+
+async def shopping_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /shopping command"""
+    from utils.keyboards import shopping_actions_keyboard
+    
+    text = "🛒 Список покупок\n\nВыберите действие:"
+    keyboard = shopping_actions_keyboard()
+    
+    await update.message.reply_text(text, reply_markup=keyboard)
+
+async def expenses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /expenses command"""
+    from utils.keyboards import expenses_menu_keyboard
+    
+    text = "💰 Меню расходов\n\nВыберите действие:"
+    keyboard = expenses_menu_keyboard()
+    
+    await update.message.reply_text(text, reply_markup=keyboard)
+
+async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /report command"""
+    from handlers.reports import report_callback
+    
+    # Create a mock callback query for compatibility
+    update.callback_query = type('MockCallbackQuery', (), {
+        'data': 'report',
+        'answer': lambda: None,
+        'edit_message_text': lambda text, reply_markup=None: update.message.reply_text(text, reply_markup=reply_markup)
+    })()
+    
+    await report_callback(update, context)
+
+async def balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /balances command"""
+    from handlers.reports import balances_callback
+    
+    # Create a mock callback query for compatibility
+    update.callback_query = type('MockCallbackQuery', (), {
+        'data': 'balances',
+        'answer': lambda: None,
+        'edit_message_text': lambda text, reply_markup=None: update.message.reply_text(text, reply_markup=reply_markup)
+    })()
+    
+    await balances_callback(update, context)
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /help command"""
+    from utils.texts import get_help_message
+    
+    help_text = get_help_message()
+    
+    await update.message.reply_text(help_text)

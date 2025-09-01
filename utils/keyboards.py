@@ -127,3 +127,5 @@ def currency_selection_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+

@@ -9,7 +9,10 @@ from telegram.ext import (
     MessageHandler, filters, ConversationHandler
 )
 from db import init_db
-from handlers.start import start_command, main_menu_callback
+from handlers.start import (
+    start_command, main_menu_callback, shopping_command, 
+    expenses_command, report_command, balances_command, help_command
+)
 from handlers.expense import (
     expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback
 )
@@ -39,11 +42,32 @@ logger = logging.getLogger(__name__)
 # States for conversation handlers
 WAITING_AMOUNT = 1
 
+def setup_commands(application: Application):
+    """Setup bot commands for Telegram menu"""
+    from telegram import BotCommand
+    
+    commands = [
+        BotCommand("start", "🏠 Главное меню"),
+        BotCommand("shopping", "🛒 Список покупок"),
+        BotCommand("expenses", "💰 Расходы"),
+        BotCommand("report", "📊 Отчет"),
+        BotCommand("balances", "💳 Балансы"),
+        BotCommand("set_rate", "💱 Установить курс валюты"),
+        BotCommand("help", "❓ Справка")
+    ]
+    
+    application.bot.set_my_commands(commands)
+
 def setup_handlers(application: Application):
     """Setup all bot handlers"""
     
     # Command handlers
     application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("shopping", shopping_command))
+    application.add_handler(CommandHandler("expenses", expenses_command))
+    application.add_handler(CommandHandler("report", report_command))
+    application.add_handler(CommandHandler("balances", balances_command))
+    application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("set_rate", set_rate_command))
     
     # Callback query handlers
@@ -93,6 +117,9 @@ def main():
     
     # Setup handlers
     setup_handlers(application)
+    
+    # Setup commands
+    setup_commands(application)
     
     # Start the bot
     logger.info("Starting bot...")
