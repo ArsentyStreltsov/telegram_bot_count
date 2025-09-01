@@ -1,18 +1,28 @@
 """
-Expense management handlers
+Expense handlers
 """
 from telegram import Update
 from telegram.ext import ContextTypes
 from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
-from utils.keyboards import category_keyboard, back_keyboard, currency_selection_keyboard
+from utils.keyboards import category_keyboard, back_keyboard, currency_selection_keyboard, expenses_menu_keyboard
 from utils.texts import get_category_name, get_currency_name, format_amount
 from services.expense_service import ExpenseService
 from models import ExpenseCategory, Currency, Profile
 import re
 
 # User state storage moved to context.bot_data
+
+async def expenses_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle expenses menu button"""
+    query = update.callback_query
+    await query.answer()
+    
+    text = "💰 Меню расходов\n\nВыберите действие:"
+    keyboard = expenses_menu_keyboard()
+    
+    await query.edit_message_text(text, reply_markup=keyboard)
 
 async def add_expense_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle add expense button"""

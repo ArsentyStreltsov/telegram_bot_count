@@ -53,9 +53,12 @@ def format_expense_report(expenses_by_category: Dict, current_month: datetime) -
             if len(custom_names) == 1:
                 category_name = list(custom_names)[0]  # Show only the custom name
             else:
-                category_name = f"Другое ({len(custom_names)} подкатегорий)"
+                # Show each custom category separately
+                for custom_name in custom_names:
+                    text += f"• {custom_name}: {format_amount(amount, Currency.SEK)}\n"
+                continue  # Skip the default line below
         
-        text += f"• {category_name}: {format_amount(amount, Currency.SEK)} ({count} записей)\n"
+        text += f"• {category_name}: {format_amount(amount, Currency.SEK)}\n"
     
     text += f"\n💰 Общий итог: {format_amount(total_sek, Currency.SEK)}"
     return text

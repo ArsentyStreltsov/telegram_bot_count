@@ -179,3 +179,24 @@ class ExpenseService:
             ExpenseAllocation.user_id == user_id,
             Expense.month == month
         ).all()
+    
+    @staticmethod
+    def delete_expense(db: Session, expense_id: int) -> bool:
+        """Delete expense and its allocations"""
+        expense = db.query(Expense).filter(Expense.id == expense_id).first()
+        if not expense:
+            return False
+        
+        # Delete allocations first (due to foreign key constraints)
+        db.query(ExpenseAllocation).filter(ExpenseAllocation.expense_id == expense_id).delete()
+        
+        # Delete the expense
+        db.delete(expense)
+        db.commit()
+        
+        return True
+    
+    @staticmethod
+    def get_expense_by_id(db: Session, expense_id: int) -> Optional[Expense]:
+        """Get expense by ID"""
+        return db.query(Expense).filter(Expense.id == expense_id).first()

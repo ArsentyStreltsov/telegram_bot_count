@@ -9,7 +9,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton("🛒 Список покупок", callback_data="shopping_list"),
-            InlineKeyboardButton("💰 Добавить расход", callback_data="add_expense")
+            InlineKeyboardButton("💰 Расходы", callback_data="expenses_menu")
         ],
         [
             InlineKeyboardButton("📊 Отчет", callback_data="report"),
@@ -101,6 +101,17 @@ def pagination_keyboard(
         keyboard.append(nav_buttons)
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
+    return InlineKeyboardMarkup(keyboard)
+
+def expenses_menu_keyboard() -> InlineKeyboardMarkup:
+    """Expenses menu keyboard"""
+    keyboard = [
+        [
+            InlineKeyboardButton("➕ Добавить расход", callback_data="add_expense"),
+            InlineKeyboardButton("🗑 Удалить расходы", callback_data="delete_expenses")
+        ],
+        [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
+    ]
     return InlineKeyboardMarkup(keyboard)
 
 def currency_selection_keyboard() -> InlineKeyboardMarkup:
