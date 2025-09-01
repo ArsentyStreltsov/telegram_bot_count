@@ -137,16 +137,25 @@ class ExpenseService:
                 'count': count
             }
             
-            # Add custom category names for "OTHER" category
+            # For "OTHER" category, get individual expenses with custom names
             if category == ExpenseCategory.OTHER:
-                custom_names = db.query(Expense.custom_category_name).filter(
+                individual_expenses = db.query(
+                    Expense.custom_category_name,
+                    Expense.amount_sek
+                ).filter(
                     Expense.category == ExpenseCategory.OTHER,
                     Expense.month == month,
                     Expense.custom_category_name.isnot(None)
-                ).distinct().all()
+                ).all()
                 
-                if custom_names:
-                    result[category.value]['custom_names'] = {name[0] for name in custom_names if name[0]}
+                if individual_expenses:
+                    result[category.value]['individual_expenses'] = [
+                        {
+                            'name': expense.custom_category_name,
+                            'amount_sek': float(expense.amount_sek)
+                        }
+                        for expense in individual_expenses
+                    ]
         
         return result
     

@@ -14,7 +14,7 @@ from handlers.start import (
     expenses_command, report_command, balances_command, help_command,
     update_commands_command
 )
-
+from handlers.menu import handle_menu_button
 from handlers.expense import (
     expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback
 )
@@ -108,9 +108,13 @@ def setup_handlers(application: Application):
         handle_text_message
     ))
     
-
+    # Menu button handler
+    application.add_handler(MessageHandler(
+        filters.Regex("^Меню$"),
+        handle_menu_button
+    ))
     
-
+    # Пока не нужен - убираем сложную логику
 
 def main():
     """Main function to run the bot"""

@@ -48,15 +48,12 @@ def format_expense_report(expenses_by_category: Dict, current_month: datetime) -
         total_sek += amount
         
         # Handle custom category names for "OTHER"
-        if category == ExpenseCategory.OTHER and data.get('custom_names'):
-            custom_names = data['custom_names']
-            if len(custom_names) == 1:
-                category_name = list(custom_names)[0]  # Show only the custom name
-            else:
-                # Show each custom category separately
-                for custom_name in custom_names:
-                    text += f"• {custom_name}: {format_amount(amount, Currency.SEK)}\n"
-                continue  # Skip the default line below
+        if category == ExpenseCategory.OTHER and data.get('individual_expenses'):
+            individual_expenses = data['individual_expenses']
+            # Show each individual expense with its own amount
+            for expense in individual_expenses:
+                text += f"• {expense['name']}: {format_amount(expense['amount_sek'], Currency.SEK)}\n"
+            continue  # Skip the default line below
         
         text += f"• {category_name}: {format_amount(amount, Currency.SEK)}\n"
     
