@@ -1,7 +1,7 @@
 """
 Telegram inline keyboard utilities
 """
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from models import ExpenseCategory, Currency
 
 def main_menu_keyboard() -> InlineKeyboardMarkup:
@@ -18,19 +18,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-def quick_commands_keyboard() -> ReplyKeyboardMarkup:
-    """Quick commands keyboard with single Menu button"""
-    keyboard = [
-        [KeyboardButton("Меню")]
-    ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False, input_field_placeholder="Напишите сообщение...")
 
-def commands_list_keyboard() -> InlineKeyboardMarkup:
-    """Commands list keyboard that appears when Menu button is pressed"""
-    keyboard = [
-        [InlineKeyboardButton("/start - Начать работу с ботом", callback_data="no_action")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
 
 def category_keyboard() -> InlineKeyboardMarkup:
     """Expense category selection keyboard"""
