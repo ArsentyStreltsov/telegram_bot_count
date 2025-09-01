@@ -3,7 +3,7 @@ Seed script to add initial data (profiles and exchange rates)
 """
 from db import get_db, init_db
 from models import Profile, ExchangeRate, Currency
-from datetime import datetime
+from datetime import datetime, timezone
 
 def seed_data():
     """Add initial data to the database"""
@@ -40,6 +40,12 @@ def seed_data():
             db.add(profile)
             print(f"Created profile: {profile_data['name']}")
         
+        # Force update exchange rates (invalidate old ones and create new)
+        print("Updating exchange rates...")
+        
+        # Invalidate all existing rates
+        db.query(ExchangeRate).update({"valid_until": datetime.now(timezone.utc)})
+        
         # Set default exchange rates
         exchange_rates_data = [
             {
@@ -57,22 +63,14 @@ def seed_data():
         ]
         
         for rate_data in exchange_rates_data:
-            existing_rate = db.query(ExchangeRate).filter(
-                ExchangeRate.from_currency == rate_data["from_currency"],
-                ExchangeRate.to_currency == rate_data["to_currency"]
-            ).first()
-            
-            if not existing_rate:
-                rate = ExchangeRate(
-                    from_currency=rate_data["from_currency"],
-                    to_currency=rate_data["to_currency"],
-                    rate=rate_data["rate"],
-                    valid_from=datetime.utcnow()
-                )
-                db.add(rate)
-                print(f"Set default {rate_data['description']} rate: {rate_data['rate']}")
-            else:
-                print(f"Rate {rate_data['description']} already exists")
+            rate = ExchangeRate(
+                from_currency=rate_data["from_currency"],
+                to_currency=rate_data["to_currency"],
+                rate=rate_data["rate"],
+                valid_from=datetime.now(timezone.utc)
+            )
+            db.add(rate)
+            print(f"Set default {rate_data['description']} rate: {rate_data['rate']}")
         
         db.commit()
         print("Seed data created successfully!")
