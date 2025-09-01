@@ -43,8 +43,9 @@ def seed_data():
         # Force update exchange rates (invalidate old ones and create new)
         print("Updating exchange rates...")
         
-        # Invalidate all existing rates
-        db.query(ExchangeRate).update({"valid_until": datetime.now(timezone.utc)})
+        # Delete ALL existing exchange rates and create new ones
+        db.query(ExchangeRate).delete()
+        print("Deleted all existing exchange rates")
         
         # Set default exchange rates
         exchange_rates_data = [
@@ -73,7 +74,7 @@ def seed_data():
             print(f"Set default {rate_data['description']} rate: {rate_data['rate']}")
         
         db.commit()
-        print("Seed data created successfully!")
+        print("Exchange rates updated successfully!")
         print("\n📝 Next steps:")
         print("1. Let all family members join the bot with /start")
         print("2. Run setup_profiles.py to configure family members and profiles")
