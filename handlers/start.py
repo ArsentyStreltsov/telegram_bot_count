@@ -115,3 +115,32 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = get_help_message()
     
     await update.message.reply_text(help_text)
+
+async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /update_commands command - force update bot commands"""
+    try:
+        # Force update bot commands
+        from telegram import BotCommand
+        
+        commands = [
+            BotCommand("start", "🏠 Главное меню"),
+            BotCommand("shopping", "🛒 Список покупок"),
+            BotCommand("expenses", "💰 Расходы"),
+            BotCommand("report", "📊 Отчет"),
+            BotCommand("balances", "💳 Балансы"),
+            BotCommand("set_rate", "💱 Установить курс валюты"),
+            BotCommand("help", "❓ Справка"),
+            BotCommand("update_commands", "🔄 Обновить команды")
+        ]
+        
+        await context.bot.set_my_commands(commands)
+        
+        text = "✅ Команды бота обновлены!\n\n"
+        text += "📱 Теперь в меню Telegram должны появиться:\n"
+        for cmd in commands:
+            text += f"• /{cmd.command} - {cmd.description}\n"
+        
+        await update.message.reply_text(text)
+        
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при обновлении команд: {str(e)}")

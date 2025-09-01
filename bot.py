@@ -11,7 +11,8 @@ from telegram.ext import (
 from db import init_db
 from handlers.start import (
     start_command, main_menu_callback, shopping_command, 
-    expenses_command, report_command, balances_command, help_command
+    expenses_command, report_command, balances_command, help_command,
+    update_commands_command
 )
 from handlers.expense import (
     expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback
@@ -56,7 +57,13 @@ def setup_commands(application: Application):
         BotCommand("help", "❓ Справка")
     ]
     
-    application.bot.set_my_commands(commands)
+    try:
+        application.bot.set_my_commands(commands)
+        logger.info("✅ Bot commands set successfully")
+        for cmd in commands:
+            logger.info(f"   {cmd.command}: {cmd.description}")
+    except Exception as e:
+        logger.error(f"❌ Failed to set bot commands: {e}")
 
 def setup_handlers(application: Application):
     """Setup all bot handlers"""
@@ -68,6 +75,7 @@ def setup_handlers(application: Application):
     application.add_handler(CommandHandler("report", report_command))
     application.add_handler(CommandHandler("balances", balances_command))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("update_commands", update_commands_command))
     application.add_handler(CommandHandler("set_rate", set_rate_command))
     
     # Callback query handlers
