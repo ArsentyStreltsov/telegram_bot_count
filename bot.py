@@ -14,7 +14,7 @@ from handlers.start import (
     expenses_command, report_command, balances_command, help_command,
     update_commands_command
 )
-from handlers.menu import handle_menu_button
+# Убрали обработчик меню
 from handlers.expense import (
     expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback
 )
@@ -25,9 +25,8 @@ from handlers.shopping import (
     toggle_item_callback, remove_item_callback
 )
 from handlers.reports import (
-    report_callback, balances_callback, delete_expenses_callback,
-    delete_expense_confirmation_callback, confirm_delete_expense_callback,
-    cancel_callback
+    report_callback, balances_callback, delete_expenses_callback, 
+    delete_expense_confirmation_callback
 )
 from handlers.commands import set_rate_command
 
@@ -99,8 +98,6 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(balances_callback, pattern="^balances$"))
     application.add_handler(CallbackQueryHandler(delete_expenses_callback, pattern="^delete_expenses$"))
     application.add_handler(CallbackQueryHandler(delete_expense_confirmation_callback, pattern="^delete_expense_"))
-    application.add_handler(CallbackQueryHandler(confirm_delete_expense_callback, pattern="^confirm_delete_expense_"))
-    application.add_handler(CallbackQueryHandler(cancel_callback, pattern="^cancel$"))
     
     # Message handlers for text input
     application.add_handler(MessageHandler(
@@ -108,11 +105,7 @@ def setup_handlers(application: Application):
         handle_text_message
     ))
     
-    # Menu button handler
-    application.add_handler(MessageHandler(
-        filters.Regex("^Меню$"),
-        handle_menu_button
-    ))
+    # Убрали обработчик меню
     
     # Пока не нужен - убираем сложную логику
 

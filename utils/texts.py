@@ -35,9 +35,18 @@ def format_amount(amount: float, currency: Currency) -> str:
 
 def format_expense_report(expenses_by_category: Dict, current_month: datetime) -> str:
     """Format monthly expense report"""
-    month_name = current_month.strftime("%B %Y")
+    # Russian month names
+    month_names = {
+        1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
+        5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
+        9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
+    }
     
-    text = f"📊 Отчет за {month_name}\n\n"
+    month_num = current_month.month
+    month_name = month_names.get(month_num, current_month.strftime("%B"))
+    year = current_month.year
+    
+    text = f"📊 Отчет за {month_name} {year}\n\n"
     
     total_sek = 0
     for category_value, data in expenses_by_category.items():

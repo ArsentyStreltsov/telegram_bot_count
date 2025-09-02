@@ -19,9 +19,9 @@ class Currency(enum.Enum):
 
 class ExpenseCategory(enum.Enum):
     """Expense categories"""
-    FOOD = "food"
-    ALCOHOL = "alcohol"
-    OTHER = "other"
+    FOOD = "Продукты"
+    ALCOHOL = "Алкоголь"
+    OTHER = "Другое"
 
 class User(Base):
     """Telegram user"""

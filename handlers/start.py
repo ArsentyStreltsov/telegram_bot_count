@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
-from utils.keyboards import main_menu_keyboard, quick_commands_keyboard
+from utils.keyboards import main_menu_keyboard
 from utils.texts import get_welcome_message
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -19,21 +19,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = BaseHandler.get_or_create_user(db, update.effective_user)
         user_name = BaseHandler.get_user_name(user)
         
-        # Send welcome message with main menu and quick commands keyboard
+        # Send welcome message with main menu
         welcome_text = get_welcome_message(user_name)
-        inline_keyboard = main_menu_keyboard()
-        reply_keyboard = quick_commands_keyboard()
+        keyboard = main_menu_keyboard()
         
         await update.message.reply_text(
             welcome_text,
-            reply_markup=inline_keyboard
-        )
-        
-        # Send quick commands keyboard
-        await update.message.reply_text(
-            "⌨️ **Быстрые команды**\n\n"
-            "Нажмите кнопку «Меню» для доступа к командам:",
-            reply_markup=reply_keyboard
+            reply_markup=keyboard
         )
         
     except Exception as e:
