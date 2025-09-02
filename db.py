@@ -51,6 +51,9 @@ def init_db():
     
     # Force create exchange rates if they don't exist
     force_create_exchange_rates()
+    
+    # Force create hardcoded users if they don't exist
+    force_create_users()
 
 def force_create_exchange_rates():
     """Force create exchange rates if they don't exist"""
@@ -108,6 +111,107 @@ def force_create_exchange_rates():
             
     except Exception as e:
         print(f"❌ Ошибка при создании курсов валют: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def force_create_users():
+    """Force create 5 hardcoded users if they don't exist"""
+    from models import User, Profile, ProfileMember
+    
+    db = next(get_db())
+    try:
+        print("🔄 Создаем захардкоженных пользователей...")
+        
+        # Захардкоженные данные пользователей
+        HARDCODED_USERS = [
+            {
+                "telegram_id": "the_lodka",
+                "first_name": "Арсентий",
+                "last_name": "Стрельцов",
+                "username": "the_lodka"
+            },
+            {
+                "telegram_id": "katrine streltsova", 
+                "first_name": "Катрин",
+                "last_name": "Стрельцова",
+                "username": "katrine_streltsova"
+            },
+            {
+                "telegram_id": "dmitry streltsov",
+                "first_name": "Дмитрий", 
+                "last_name": "Стрельцов",
+                "username": "dmitry_streltsov"
+            },
+            {
+                "telegram_id": "dashok she",
+                "first_name": "Даша",
+                "last_name": "Ше",
+                "username": "dashok_she"
+            },
+            {
+                "telegram_id": "Михаил",
+                "first_name": "Михаил",
+                "last_name": "Брат",
+                "username": "mikhail_brat"
+            }
+        ]
+        
+        # Создаем или обновляем каждого пользователя
+        for user_data in HARDCODED_USERS:
+            # Проверяем, существует ли пользователь
+            existing_user = db.query(User).filter(
+                User.telegram_id == user_data["telegram_id"]
+            ).first()
+            
+            if existing_user:
+                # Обновляем существующего пользователя
+                existing_user.first_name = user_data["first_name"]
+                existing_user.last_name = user_data["last_name"]
+                existing_user.username = user_data["username"]
+                print(f"✅ Обновлен пользователь: {user_data['first_name']}")
+            else:
+                # Создаем нового пользователя
+                new_user = User(
+                    telegram_id=user_data["telegram_id"],
+                    first_name=user_data["first_name"],
+                    last_name=user_data["last_name"],
+                    username=user_data["username"]
+                )
+                db.add(new_user)
+                print(f"✅ Создан пользователь: {user_data['first_name']}")
+        
+        # Создаем профиль "Home" если его нет
+        home_profile = db.query(Profile).filter(Profile.name == "Home").first()
+        if not home_profile:
+            home_profile = Profile(name="Home", is_default=True)
+            db.add(home_profile)
+            print("✅ Создан профиль Home")
+        
+        # Добавляем всех пользователей в профиль Home с весом 1
+        for user_data in HARDCODED_USERS:
+            user = db.query(User).filter(User.telegram_id == user_data["telegram_id"]).first()
+            if user:
+                # Проверяем, есть ли уже связь
+                existing_member = db.query(ProfileMember).filter(
+                    ProfileMember.profile_id == home_profile.id,
+                    ProfileMember.user_id == user.id
+                ).first()
+                
+                if not existing_member:
+                    member = ProfileMember(
+                        profile_id=home_profile.id,
+                        user_id=user.id,
+                        weight=1.0
+                    )
+                    db.add(member)
+                    print(f"✅ Добавлен {user_data['first_name']} в профиль Home")
+        
+        db.commit()
+        print("🎉 Все захардкоженные пользователи созданы/обновлены!")
+        
+    except Exception as e:
+        print(f"❌ Ошибка при создании пользователей: {e}")
         db.rollback()
     finally:
         db.close()
