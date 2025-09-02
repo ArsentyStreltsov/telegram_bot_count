@@ -126,40 +126,40 @@ def force_create_users():
         # Захардкоженные данные пользователей
         HARDCODED_USERS = [
             {
-                "telegram_id": "the_lodka",
-                "first_name": "Арсентий",
+                "telegram_id": 804085588,
+                "first_name": "Сеня",
                 "last_name": "Стрельцов",
                 "username": "the_lodka"
             },
             {
-                "telegram_id": "katrine streltsova", 
-                "first_name": "Катрин",
+                "telegram_id": 252901018, 
+                "first_name": "Катя",
                 "last_name": "Стрельцова",
                 "username": "katrine_streltsova"
             },
             {
-                "telegram_id": "dmitry streltsov",
-                "first_name": "Дмитрий", 
+                "telegram_id": 350653235,
+                "first_name": "Дима", 
                 "last_name": "Стрельцов",
-                "username": "dmitry_streltsov"
+                "username": None
             },
             {
-                "telegram_id": "dashok she",
+                "telegram_id": 916228993,
                 "first_name": "Даша",
                 "last_name": "Ше",
                 "username": "dashok_she"
             },
             {
-                "telegram_id": "Михаил",
-                "first_name": "Михаил",
+                "telegram_id": 6379711500,
+                "first_name": "Миша",
                 "last_name": "Брат",
-                "username": "mikhail_brat"
+                "username": "l_tyti"
             }
         ]
         
         # Создаем или обновляем каждого пользователя
         for user_data in HARDCODED_USERS:
-            # Проверяем, существует ли пользователь
+            # Проверяем, существует ли пользователь по telegram_id
             existing_user = db.query(User).filter(
                 User.telegram_id == user_data["telegram_id"]
             ).first()
@@ -169,7 +169,7 @@ def force_create_users():
                 existing_user.first_name = user_data["first_name"]
                 existing_user.last_name = user_data["last_name"]
                 existing_user.username = user_data["username"]
-                print(f"✅ Обновлен пользователь: {user_data['first_name']}")
+                print(f"✅ Обновлен пользователь: {user_data['first_name']} (ID: {user_data['telegram_id']})")
             else:
                 # Создаем нового пользователя
                 new_user = User(
@@ -179,7 +179,7 @@ def force_create_users():
                     username=user_data["username"]
                 )
                 db.add(new_user)
-                print(f"✅ Создан пользователь: {user_data['first_name']}")
+                print(f"✅ Создан пользователь: {user_data['first_name']} (ID: {user_data['telegram_id']})")
         
         # Создаем профиль "Home" если его нет
         home_profile = db.query(Profile).filter(Profile.name == "Home").first()
@@ -206,6 +206,8 @@ def force_create_users():
                     )
                     db.add(member)
                     print(f"✅ Добавлен {user_data['first_name']} в профиль Home")
+                else:
+                    print(f"✅ {user_data['first_name']} уже в профиле Home")
         
         db.commit()
         print("🎉 Все захардкоженные пользователи созданы/обновлены!")
