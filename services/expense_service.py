@@ -75,7 +75,7 @@ class ExpenseService:
         db.add(expense)
         db.flush()  # Get the ID
         
-        # Use provided allocations or calculate using profile
+        # Use provided allocations or calculate using special category rules
         if allocations:
             # Use special splitting logic
             for user_id, share_amount in allocations.items():
@@ -87,15 +87,18 @@ class ExpenseService:
                 )
                 db.add(allocation)
         else:
-            # Use profile-based splitting
-            profile = db.query(Profile).filter(Profile.id == profile_id).first()
-            if not profile:
-                raise ValueError(f"Profile {profile_id} not found")
-            
-            profile_allocations = SplitService.calculate_expense_split(db, expense, profile)
+            # Use special category-based splitting
+            from services.special_split import calculate_special_split
+            category_allocations = calculate_special_split(db, amount_sek, category, profile_id)
             
             # Save allocations
-            for allocation in profile_allocations:
+            for user_id, share_amount in category_allocations.items():
+                allocation = ExpenseAllocation(
+                    expense_id=expense.id,
+                    user_id=user_id,
+                    amount_sek=share_amount,
+                    weight_used=1.0
+                )
                 db.add(allocation)
         
         db.commit()

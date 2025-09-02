@@ -41,7 +41,7 @@ async def report_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.close()
 
 async def balances_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle balances button"""
+    """Handle balances button - show group balances"""
     query = update.callback_query
     await query.answer()
     
@@ -49,23 +49,10 @@ async def balances_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = next(get_db())
     
     try:
-        # Calculate balances
-        balances = SplitService.calculate_user_balances(db)
-        
-        if not balances:
-            text = "💳 Балансы\n\nНет данных для расчета балансов"
-            keyboard = back_keyboard("main_menu")
-        else:
-            # Get user details
-            user_ids = list(balances.keys())
-            users = db.query(User).filter(User.id.in_(user_ids)).all()
-            users_dict = {user.id: user for user in users}
-            
-            # Calculate settlement plan
-            settlements = SplitService.calculate_settlement_plan(db, balances)
-            
-            text = format_balance_report(balances, users_dict, settlements)
-            keyboard = back_keyboard("main_menu")
+        # Use new group balance service
+        from services.group_balance import GroupBalanceService
+        text = GroupBalanceService.get_detailed_balance_report(db)
+        keyboard = back_keyboard("main_menu")
         
         await query.edit_message_text(text, reply_markup=keyboard)
         

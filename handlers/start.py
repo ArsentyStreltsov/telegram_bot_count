@@ -97,17 +97,17 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await report_callback(update, context)
 
 async def balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /balances command"""
-    from handlers.reports import balances_callback
+    """Handle /balances command - show group balances"""
+    from services.group_balance import GroupBalanceService
     
-    # Create a mock callback query for compatibility
-    update.callback_query = type('MockCallbackQuery', (), {
-        'data': 'balances',
-        'answer': lambda: None,
-        'edit_message_text': lambda text, reply_markup=None: update.message.reply_text(text, reply_markup=reply_markup)
-    })()
-    
-    await balances_callback(update, context)
+    db = next(get_db())
+    try:
+        report = GroupBalanceService.get_detailed_balance_report(db)
+        await update.message.reply_text(report)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при получении балансов групп: {str(e)}")
+    finally:
+        db.close()
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /help command"""
@@ -129,6 +129,7 @@ async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_
             BotCommand("expenses", "💰 Расходы"),
             BotCommand("report", "📊 Отчет"),
             BotCommand("balances", "💳 Балансы"),
+            BotCommand("group_balances", "👥 Балансы групп"),
             BotCommand("set_rate", "💱 Установить курс валюты"),
             BotCommand("help", "❓ Справка"),
             BotCommand("update_commands", "🔄 Обновить команды")
@@ -145,6 +146,19 @@ async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_
         
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка при обновлении команд: {str(e)}")
+
+async def group_balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /group_balances command - show group balances"""
+    from services.group_balance import GroupBalanceService
+    
+    db = next(get_db())
+    try:
+        report = GroupBalanceService.get_detailed_balance_report(db)
+        await update.message.reply_text(report)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при получении балансов групп: {str(e)}")
+    finally:
+        db.close()
 
 async def db_info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /db_info command - show database information"""
