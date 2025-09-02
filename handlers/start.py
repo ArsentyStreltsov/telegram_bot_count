@@ -8,6 +8,7 @@ from db import get_db
 from handlers.base import BaseHandler
 from utils.keyboards import main_menu_keyboard
 from utils.texts import get_welcome_message
+from models import User, Profile, ProfileMember
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
@@ -144,3 +145,63 @@ async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_
         
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка при обновлении команд: {str(e)}")
+
+async def db_info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /db_info command - show database information"""
+    db = next(get_db())
+    
+    try:
+        # Get users info
+        users = db.query(User).all()
+        users_text = "👥 **Пользователи в базе:**\n\n"
+        
+        for user in users:
+            users_text += f"• ID: {user.id}\n"
+            users_text += f"  Telegram ID: {user.telegram_id}\n"
+            users_text += f"  Username: @{user.username or 'нет'}\n"
+            users_text += f"  Имя: {user.first_name or 'нет'}\n"
+            users_text += f"  Фамилия: {user.last_name or 'нет'}\n"
+            users_text += f"  Дата регистрации: {user.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+            users_text += f"  Админ: {'Да' if user.is_admin else 'Нет'}\n\n"
+        
+        # Get profiles info
+        profiles = db.query(Profile).all()
+        profiles_text = "🏠 **Профили:**\n\n"
+        
+        for profile in profiles:
+            profiles_text += f"• ID: {profile.id}\n"
+            profiles_text += f"  Название: {profile.name}\n"
+            profiles_text += f"  Описание: {profile.description or 'нет'}\n"
+            profiles_text += f"  По умолчанию: {'Да' if profile.is_default else 'Нет'}\n"
+            profiles_text += f"  Дата создания: {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
+            
+            # Get profile members
+            members = db.query(ProfileMember).filter(ProfileMember.profile_id == profile.id).all()
+            if members:
+                profiles_text += "  👥 Участники:\n"
+                for member in members:
+                    member_user = db.query(User).filter(User.id == member.user_id).first()
+                    if member_user:
+                        profiles_text += f"    - {member_user.first_name or member_user.username} (вес: {member.weight})\n"
+                profiles_text += "\n"
+        
+        # Get expenses count
+        from models import Expense
+        expenses_count = db.query(Expense).count()
+        expenses_text = f"💰 **Расходы:** {expenses_count} записей\n\n"
+        
+        # Combine all info
+        full_text = users_text + profiles_text + expenses_text
+        
+        # Split if too long
+        if len(full_text) > 4000:
+            await update.message.reply_text(users_text)
+            await update.message.reply_text(profiles_text)
+            await update.message.reply_text(expenses_text)
+        else:
+            await update.message.reply_text(full_text)
+            
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка при получении информации: {str(e)}")
+    finally:
+        db.close()

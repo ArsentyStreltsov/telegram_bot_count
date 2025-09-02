@@ -12,7 +12,7 @@ from db import init_db
 from handlers.start import (
     start_command, main_menu_callback, shopping_command, 
     expenses_command, report_command, balances_command, help_command,
-    update_commands_command
+    update_commands_command, db_info_command
 )
 # Убрали обработчик меню
 from handlers.expense import (
@@ -54,7 +54,8 @@ def setup_commands(application: Application):
         BotCommand("report", "📊 Отчет"),
         BotCommand("balances", "💳 Балансы"),
         BotCommand("set_rate", "💱 Установить курс валюты"),
-        BotCommand("help", "❓ Справка")
+        BotCommand("help", "❓ Справка"),
+        BotCommand("db_info", "🗄️ Информация о БД")
     ]
     
     try:
@@ -76,6 +77,7 @@ def setup_handlers(application: Application):
     application.add_handler(CommandHandler("balances", balances_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("update_commands", update_commands_command))
+    application.add_handler(CommandHandler("db_info", db_info_command))
     application.add_handler(CommandHandler("set_rate", set_rate_command))
     
     # Callback query handlers
