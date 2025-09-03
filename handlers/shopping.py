@@ -11,6 +11,19 @@ from utils.texts import format_shopping_list, get_category_name
 from services.shopping_service import ShoppingService
 from models import ExpenseCategory
 
+def handle_db_error(e: Exception, action: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Handle database errors with user-friendly messages"""
+    error_text = f"❌ Ошибка при {action}"
+    
+    # Check if it's a database connection error
+    if "server closed the connection" in str(e) or "psycopg2.OperationalError" in str(e):
+        error_text += "\n\n🔄 Проблема с подключением к базе данных.\nПопробуйте еще раз через несколько секунд."
+    else:
+        error_text += f"\n\n{str(e)}"
+    
+    keyboard = back_keyboard("shopping_list")
+    return error_text, keyboard
+
 async def shopping_list_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle shopping list button"""
     query = update.callback_query
@@ -63,7 +76,8 @@ async def list_shopping_items_callback(update: Update, context: ContextTypes.DEF
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "загрузке списка покупок")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 
@@ -94,7 +108,8 @@ async def remove_shopping_item_callback(update: Update, context: ContextTypes.DE
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "загрузке списка покупок")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 
@@ -156,7 +171,8 @@ async def toggle_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "обновлении списка покупок")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 
@@ -203,7 +219,8 @@ async def remove_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "удалении товара")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 

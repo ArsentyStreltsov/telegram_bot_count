@@ -39,10 +39,17 @@ Base = declarative_base()
 metadata = MetaData()
 
 def get_db():
-    """Get database session"""
+    """Get database session with connection error handling"""
     db = SessionLocal()
     try:
+        # Test connection
+        db.execute("SELECT 1")
         yield db
+    except Exception as e:
+        # Close session on error
+        db.close()
+        # Re-raise the error
+        raise e
     finally:
         db.close()
 

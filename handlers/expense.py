@@ -12,6 +12,19 @@ from services.expense_service import ExpenseService
 from models import ExpenseCategory, Currency, Profile
 import re
 
+def handle_db_error(e: Exception, action: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Handle database errors with user-friendly messages"""
+    error_text = f"❌ Ошибка при {action}"
+    
+    # Check if it's a database connection error
+    if "server closed the connection" in str(e) or "psycopg2.OperationalError" in str(e):
+        error_text += "\n\n🔄 Проблема с подключением к базе данных.\nПопробуйте еще раз через несколько секунд."
+    else:
+        error_text += f"\n\n{str(e)}"
+    
+    keyboard = back_keyboard("main_menu")
+    return error_text, keyboard
+
 # User state storage moved to context.bot_data
 
 async def expenses_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -53,7 +66,8 @@ async def add_expense_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "добавлении расхода")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 
@@ -157,7 +171,8 @@ async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(text, reply_markup=keyboard)
             
         except Exception as e:
-            await query.edit_message_text(f"❌ Ошибка при создании расхода: {str(e)}")
+            error_text, keyboard = handle_db_error(e, "создании расхода")
+            await query.edit_message_text(error_text, reply_markup=keyboard)
         finally:
             db.close()
 
@@ -311,7 +326,8 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text(text, reply_markup=keyboard)
         
     except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка при создании расхода: {str(e)}")
+        error_text, keyboard = handle_db_error(e, "создании расхода")
+        await query.edit_message_text(error_text, reply_markup=keyboard)
     finally:
         db.close()
 
