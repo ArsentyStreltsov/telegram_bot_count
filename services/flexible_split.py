@@ -32,6 +32,18 @@ class FlexibleSplitService:
                 User.telegram_id.in_([804085588, 916228993, 252901018, 350653235])
             ).all()
             
+        elif split_type == "split_3":
+            # На троих (Сеня + Даша + Катя)
+            return db.query(User).filter(
+                User.telegram_id.in_([804085588, 916228993, 252901018])
+            ).all()
+            
+        elif split_type == "split_2":
+            # На двоих (Сеня + Даша)
+            return db.query(User).filter(
+                User.telegram_id.in_([804085588, 916228993])
+            ).all()
+            
         elif split_type == "split_families":
             # Только на противоположную группу
             # Определяем, кто платит
@@ -82,6 +94,30 @@ class FlexibleSplitService:
                 allocations[user.id] = share_per_user
             return allocations
             
+        elif split_type == "split_3":
+            # На троих (Сеня + Даша + Катя)
+            users = cls.get_users_for_split(db, split_type, profile_id)
+            if not users:
+                return {}
+            
+            share_per_user = amount / len(users)
+            allocations = {}
+            for user in users:
+                allocations[user.id] = share_per_user
+            return allocations
+            
+        elif split_type == "split_2":
+            # На двоих (Сеня + Даша)
+            users = cls.get_users_for_split(db, split_type, profile_id)
+            if not users:
+                return {}
+            
+            share_per_user = amount / len(users)
+            allocations = {}
+            for user in users:
+                allocations[user.id] = share_per_user
+            return allocations
+            
         elif split_type == "split_families":
             # За другую семью (без плательщика)
             if payer_telegram_id in cls.GROUP_1_IDS:
@@ -116,6 +152,10 @@ class FlexibleSplitService:
             return "на всех 5 поровну"
         elif split_type == "split_4":
             return "на всех кроме Миши (4 человека)"
+        elif split_type == "split_3":
+            return "на троих (Сеня + Даша + Катя)"
+        elif split_type == "split_2":
+            return "на двоих (Сеня + Даша)"
         elif split_type == "split_families":
             return "за другую семью (без моей группы)"
         else:
