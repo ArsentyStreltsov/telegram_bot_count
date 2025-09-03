@@ -322,12 +322,6 @@ def format_todo_list(items, db):
         if item.note:
             text += f"   📝 {item.note}\n"
         
-        if item.is_completed and item.completed_by:
-            # Get user name from database
-            completed_user = db.query(User).filter(User.id == item.completed_by).first()
-            if completed_user:
-                text += f"   ✅ Выполнил: {BaseHandler.get_user_name(completed_user)}\n"
-        
         text += "\n"
     
     return text
