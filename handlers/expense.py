@@ -231,4 +231,88 @@ async def currency_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await query.edit_message_text(text, reply_markup=keyboard)
 
+async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle split choice for OTHER category expenses"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    user_states = context.bot_data.get('user_states', {})
+    
+    if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
+        await query.edit_message_text("❌ Ошибка состояния")
+        return
+    
+    # Parse split type from callback data
+    callback_data = query.data
+    if not callback_data.startswith("split_"):
+        return
+    
+    split_type = callback_data
+    user_states[user_id]['split_type'] = split_type
+    
+    # Create expense with chosen split
+    db = next(get_db())
+    
+    try:
+        # Get default profile (Home)
+        profile = db.query(Profile).filter(Profile.name == "Home").first()
+        if not profile:
+            # Create default profile if it doesn't exist
+            profile = Profile(name="Home", is_default=True)
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+        
+        # Get user
+        user = BaseHandler.get_or_create_user(db, update.effective_user)
+        
+        # Get values from state
+        amount = user_states[user_id]['amount']
+        currency = user_states[user_id]['currency']
+        category = user_states[user_id]['category']
+        custom_category_name = user_states[user_id]['custom_category_name']
+        
+        # Create expense with flexible splitting logic
+        from services.flexible_split import FlexibleSplitService
+        
+        # Calculate allocations based on split choice
+        allocations = FlexibleSplitService.calculate_flexible_split(
+            db, amount, split_type, profile.id, user.telegram_id
+        )
+        
+        # Create expense
+        expense = ExpenseService.create_expense(
+            db=db,
+            amount=amount,
+            currency=currency,
+            category=category,
+            payer_id=user.id,
+            profile_id=profile.id,
+            allocations=allocations,
+            custom_category_name=custom_category_name
+        )
+        
+        # Clear user state
+        del context.bot_data['user_states'][user_id]
+        
+        # Show success message
+        split_description = FlexibleSplitService.get_split_description(split_type)
+        text = f"✅ Расход добавлен!\n\n"
+        text += f"📂 Категория: {custom_category_name}\n"
+        text += f"💱 Валюта: {get_currency_name(currency)}\n"
+        text += f"💰 Сумма: {format_amount(amount, currency)}\n"
+        text += f"👥 Разделение: {split_description}\n"
+        text += f"💳 Оплатил: {BaseHandler.get_user_name(user)}"
+        
+        from utils.keyboards import back_keyboard
+        keyboard = back_keyboard("main_menu")
+        
+        await query.edit_message_text(text, reply_markup=keyboard)
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Ошибка при создании расхода: {str(e)}")
+    finally:
+        db.close()
+
 

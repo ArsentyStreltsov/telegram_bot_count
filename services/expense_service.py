@@ -79,10 +79,16 @@ class ExpenseService:
         if allocations:
             # Use special splitting logic
             for user_id, share_amount in allocations.items():
+                # Convert share_amount to SEK if needed
+                if currency == Currency.SEK:
+                    share_amount_sek = share_amount
+                else:
+                    share_amount_sek = share_amount * exchange_rate
+                
                 allocation = ExpenseAllocation(
                     expense_id=expense.id,
                     user_id=user_id,
-                    amount_sek=share_amount,
+                    amount_sek=share_amount_sek,
                     weight_used=1.0
                 )
                 db.add(allocation)

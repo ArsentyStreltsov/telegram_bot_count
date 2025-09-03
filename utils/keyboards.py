@@ -86,6 +86,20 @@ def back_keyboard(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
     keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data=callback_data)]]
     return InlineKeyboardMarkup(keyboard)
 
+def split_choice_keyboard() -> InlineKeyboardMarkup:
+    """Split choice keyboard for OTHER category expenses"""
+    keyboard = [
+        [
+            InlineKeyboardButton("👥 На 5х", callback_data="split_5"),
+            InlineKeyboardButton("👤 На 4х", callback_data="split_4")
+        ],
+        [
+            InlineKeyboardButton("👨‍👩‍👧‍👦 За другую семью", callback_data="split_families")
+        ],
+        [InlineKeyboardButton("🔙 Назад", callback_data="add_expense")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
 def pagination_keyboard(
     current_page: int, 
     total_pages: int, 
