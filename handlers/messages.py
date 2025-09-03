@@ -9,6 +9,7 @@ from handlers.base import BaseHandler
 from utils.keyboards import back_keyboard, category_keyboard
 from services.shopping_service import ShoppingService
 from models import ExpenseCategory, Profile
+from handlers.todo import handle_todo_input
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all text messages based on user state"""

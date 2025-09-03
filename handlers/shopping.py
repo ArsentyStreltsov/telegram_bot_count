@@ -120,11 +120,11 @@ async def toggle_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Parse item ID from callback data
     callback_data = query.data
-    if not callback_data.startswith("toggle_"):
+    if not callback_data.startswith("toggle_shopping_"):
         return
     
     try:
-        item_id = int(callback_data.replace("toggle_", ""))
+        item_id = int(callback_data.replace("toggle_shopping_", ""))
     except ValueError:
         await query.edit_message_text("❌ Неверный ID товара")
         return
@@ -183,11 +183,11 @@ async def remove_item_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     # Parse item ID from callback data
     callback_data = query.data
-    if not callback_data.startswith("remove_"):
+    if not callback_data.startswith("remove_shopping_"):
         return
     
     try:
-        item_id = int(callback_data.replace("remove_", ""))
+        item_id = int(callback_data.replace("remove_shopping_", ""))
     except ValueError:
         await query.edit_message_text("❌ Неверный ID товара")
         return
@@ -232,7 +232,7 @@ def create_shopping_items_keyboard(items):
         # Показываем кнопку только для неотмеченных товаров
         if not item.is_checked:
             button_text = f"⭕ {item.title}"
-            callback_data = f"toggle_{item.id}"
+            callback_data = f"toggle_shopping_{item.id}"
             keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="shopping_list")])
@@ -244,7 +244,7 @@ def create_remove_items_keyboard(items):
     
     for item in items:
         button_text = f"🗑 {item.title}"
-        callback_data = f"remove_{item.id}"
+        callback_data = f"remove_shopping_{item.id}"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="shopping_list")])

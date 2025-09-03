@@ -103,8 +103,8 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(add_shopping_item_callback, pattern="^add_shopping_item$"))
     application.add_handler(CallbackQueryHandler(list_shopping_items_callback, pattern="^list_shopping_items$"))
     application.add_handler(CallbackQueryHandler(remove_shopping_item_callback, pattern="^remove_shopping_item$"))
-    application.add_handler(CallbackQueryHandler(toggle_item_callback, pattern="^toggle_"))
-    application.add_handler(CallbackQueryHandler(remove_item_callback, pattern="^remove_"))
+    application.add_handler(CallbackQueryHandler(toggle_item_callback, pattern="^toggle_shopping_"))
+    application.add_handler(CallbackQueryHandler(remove_item_callback, pattern="^remove_shopping_"))
     
     # Todo handlers
     application.add_handler(CallbackQueryHandler(todo_list_callback, pattern="^todo_list$"))
