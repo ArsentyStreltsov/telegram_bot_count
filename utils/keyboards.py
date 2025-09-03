@@ -9,10 +9,13 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton("🛒 Список покупок", callback_data="shopping_list"),
-            InlineKeyboardButton("💰 Расходы", callback_data="expenses_menu")
+            InlineKeyboardButton("📝 Список дел", callback_data="todo_list")
         ],
         [
-            InlineKeyboardButton("📊 Отчет", callback_data="report"),
+            InlineKeyboardButton("💰 Расходы", callback_data="expenses_menu"),
+            InlineKeyboardButton("📊 Отчет", callback_data="report")
+        ],
+        [
             InlineKeyboardButton("💳 Балансы", callback_data="balances")
         ]
     ]

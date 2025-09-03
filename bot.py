@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 from db import init_db
 from handlers.start import (
-    start_command, main_menu_callback, shopping_command, 
+    start_command, main_menu_callback, shopping_command, todo_command,
     expenses_command, report_command, balances_command, help_command,
     update_commands_command, db_info_command, group_balances_command
 )
@@ -23,6 +23,12 @@ from handlers.shopping import (
     shopping_list_callback, add_shopping_item_callback,
     list_shopping_items_callback, remove_shopping_item_callback, 
     toggle_item_callback, remove_item_callback
+)
+from handlers.todo import (
+    todo_list_callback, add_todo_item_callback,
+    list_todo_items_callback, remove_todo_item_callback, 
+    toggle_todo_item_callback, remove_todo_item_specific_callback,
+    handle_todo_input
 )
 from handlers.reports import (
     report_callback, balances_callback, delete_expenses_callback, 
@@ -50,6 +56,7 @@ def setup_commands(application: Application):
     commands = [
         BotCommand("start", "🏠 Главное меню"),
         BotCommand("shopping", "🛒 Список покупок"),
+        BotCommand("todo", "📝 Список дел"),
         BotCommand("expenses", "💰 Расходы"),
         BotCommand("report", "📊 Отчет"),
         BotCommand("balances", "💳 Балансы"),
@@ -73,6 +80,7 @@ def setup_handlers(application: Application):
     # Command handlers
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("shopping", shopping_command))
+    application.add_handler(CommandHandler("todo", todo_command))
     application.add_handler(CommandHandler("expenses", expenses_command))
     application.add_handler(CommandHandler("report", report_command))
     application.add_handler(CommandHandler("balances", balances_command))
@@ -97,6 +105,14 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(remove_shopping_item_callback, pattern="^remove_shopping_item$"))
     application.add_handler(CallbackQueryHandler(toggle_item_callback, pattern="^toggle_"))
     application.add_handler(CallbackQueryHandler(remove_item_callback, pattern="^remove_"))
+    
+    # Todo handlers
+    application.add_handler(CallbackQueryHandler(todo_list_callback, pattern="^todo_list$"))
+    application.add_handler(CallbackQueryHandler(add_todo_item_callback, pattern="^add_todo_item$"))
+    application.add_handler(CallbackQueryHandler(list_todo_items_callback, pattern="^list_todo_items$"))
+    application.add_handler(CallbackQueryHandler(remove_todo_item_callback, pattern="^remove_todo_item$"))
+    application.add_handler(CallbackQueryHandler(toggle_todo_item_callback, pattern="^toggle_todo_"))
+    application.add_handler(CallbackQueryHandler(remove_todo_item_specific_callback, pattern="^remove_todo_"))
     
     # Report handlers
     application.add_handler(CallbackQueryHandler(report_callback, pattern="^report$"))

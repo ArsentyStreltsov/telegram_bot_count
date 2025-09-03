@@ -28,6 +28,8 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         if user_state.get('action') == 'add_shopping_item':
             await handle_shopping_item_input(update, context, db, user, text, user_state)
+        elif user_state.get('action') == 'add_todo_item':
+            await handle_todo_input(update, context)
         elif user_state.get('action') == 'add_expense':
             if user_state.get('step') == 'custom_category':
                 await handle_custom_category_input(update, context, db, user, text, user_state)

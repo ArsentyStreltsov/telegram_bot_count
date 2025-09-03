@@ -82,6 +82,20 @@ class ShoppingItem(Base):
     checked_at = Column(DateTime, nullable=True)
     checked_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
+class TodoItem(Base):
+    """Todo list item"""
+    __tablename__ = "todo_items"
+    
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    priority = Column(String(50), nullable=True, default="medium")  # low, medium, high
+    note = Column(Text, nullable=True)
+    is_completed = Column(Boolean, default=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    completed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
 class ExchangeRate(Base):
     """Exchange rate history"""
     __tablename__ = "exchange_rates"

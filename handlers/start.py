@@ -74,6 +74,15 @@ async def shopping_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(text, reply_markup=keyboard)
 
+async def todo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /todo command"""
+    from handlers.todo import todo_actions_keyboard
+    
+    text = "📝 Список дел\n\nВыберите действие:"
+    keyboard = todo_actions_keyboard()
+    
+    await update.message.reply_text(text, reply_markup=keyboard)
+
 async def expenses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /expenses command"""
     from utils.keyboards import expenses_menu_keyboard

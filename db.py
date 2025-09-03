@@ -56,7 +56,7 @@ def get_db():
 def init_db():
     """Initialize database tables"""
     # Import models to ensure they are registered
-    from models import User, Profile, ProfileMember, ShoppingItem, Expense, ExpenseAllocation, ExchangeRate, MonthSnapshot
+    from models import User, Profile, ProfileMember, ShoppingItem, TodoItem, Expense, ExpenseAllocation, ExchangeRate, MonthSnapshot
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
