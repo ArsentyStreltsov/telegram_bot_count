@@ -5,6 +5,11 @@ import os
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
+from dotenv import load_dotenv
+
+# Load environment variables from env.production if it exists
+if os.path.exists('env.production'):
+    load_dotenv('env.production')
 
 # Create database directory if it doesn't exist
 os.makedirs('data', exist_ok=True)
