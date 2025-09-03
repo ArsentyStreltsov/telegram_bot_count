@@ -2,7 +2,7 @@
 Database configuration and session management
 """
 import os
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 from dotenv import load_dotenv
@@ -43,7 +43,7 @@ def get_db():
     db = SessionLocal()
     try:
         # Test connection
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         yield db
     except Exception as e:
         # Close session on error
