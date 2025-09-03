@@ -9,6 +9,7 @@ from db import get_db
 from handlers.base import BaseHandler
 from utils.keyboards import back_keyboard
 from services.todo_service import TodoService
+from models import User
 
 def handle_db_error(e: Exception, action: str) -> tuple[str, InlineKeyboardMarkup]:
     """Handle database errors with user-friendly messages"""
@@ -316,13 +317,7 @@ def format_todo_list(items, db):
     
     for i, item in enumerate(items, 1):
         status = "✅" if item.is_completed else "⭕"
-        priority_emoji = {
-            "low": "🟢",
-            "medium": "🟡", 
-            "high": "🔴"
-        }.get(item.priority, "🟡")
-        
-        text += f"{i}. {status} {priority_emoji} {item.title}\n"
+        text += f"{i}. {status} {item.title}\n"
         
         if item.note:
             text += f"   📝 {item.note}\n"

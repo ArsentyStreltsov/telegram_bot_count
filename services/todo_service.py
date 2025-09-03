@@ -12,11 +12,10 @@ class TodoService:
     """Service for managing todo items"""
     
     @staticmethod
-    def add_item(db: Session, title: str, created_by: int, priority: str = "medium", note: str = None) -> TodoItem:
+    def add_item(db: Session, title: str, created_by: int, note: str = None) -> TodoItem:
         """Add new todo item"""
         item = TodoItem(
             title=title.strip(),
-            priority=priority,
             note=note.strip() if note else None,
             created_by=created_by
         )
@@ -73,7 +72,7 @@ class TodoService:
         return True
     
     @staticmethod
-    def update_item(db: Session, item_id: int, title: str = None, priority: str = None, note: str = None) -> bool:
+    def update_item(db: Session, item_id: int, title: str = None, note: str = None) -> bool:
         """Update todo item"""
         item = db.query(TodoItem).filter(TodoItem.id == item_id).first()
         if not item:
@@ -81,8 +80,6 @@ class TodoService:
         
         if title is not None:
             item.title = title.strip()
-        if priority is not None:
-            item.priority = priority
         if note is not None:
             item.note = note.strip() if note else None
         
