@@ -90,15 +90,15 @@ def split_choice_keyboard() -> InlineKeyboardMarkup:
     """Split choice keyboard for OTHER category expenses"""
     keyboard = [
         [
-            InlineKeyboardButton("👥 На 5х", callback_data="split_5"),
-            InlineKeyboardButton("👤 На 4х", callback_data="split_4")
+            InlineKeyboardButton("На 5х", callback_data="split_5"),
+            InlineKeyboardButton("На 4х", callback_data="split_4")
         ],
         [
-            InlineKeyboardButton("👨‍👩‍👦 На 3х", callback_data="split_3"),
-            InlineKeyboardButton("👨‍👩 На 2х", callback_data="split_2")
+            InlineKeyboardButton("На 3х", callback_data="split_3"),
+            InlineKeyboardButton("На 2х", callback_data="split_2")
         ],
         [
-            InlineKeyboardButton("👨‍👩‍👧‍👦 За другую семью", callback_data="split_families")
+            InlineKeyboardButton("Без разделения", callback_data="split_families")
         ],
         [InlineKeyboardButton("🔙 Назад", callback_data="add_expense")]
     ]

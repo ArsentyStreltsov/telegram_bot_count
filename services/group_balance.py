@@ -126,7 +126,16 @@ class GroupBalanceService:
     
     @classmethod
     def _calculate_category_shares(cls, db: Session, expense, allocations: List[ExpenseAllocation]) -> Dict[int, float]:
-        """Calculate how much each user owes for this expense based on category rules"""
+        """Calculate how much each user owes for this expense based on actual allocations"""
+        
+        # Если есть аллокации (например, из FlexibleSplitService), используем их
+        if allocations:
+            shares = {}
+            for allocation in allocations:
+                shares[allocation.user_id] = allocation.amount_sek
+            return shares
+        
+        # Иначе используем старую логику по категориям (для обратной совместимости)
         from services.special_split import get_users_for_category
         
         # Получаем пользователей для данной категории
