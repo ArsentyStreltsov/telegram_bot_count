@@ -325,6 +325,11 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
                 keyboard.inline_keyboard.insert(-2, [InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")])
             
             print(f"🔍 DEBUG: Updating message with new keyboard")
+            
+            # Create text for the message
+            text = "👥 Выберите между кем разделить расход:\n\n"
+            text += "P.S. если ты заплатил за другого и расход делить не надо - выбирай 'Без разделения'"
+            
             await query.edit_message_text(text, reply_markup=keyboard)
         else:
             print(f"❌ DEBUG: Unknown participant name: {participant_name}")
