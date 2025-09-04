@@ -31,7 +31,7 @@ from handlers.todo import (
     handle_todo_input
 )
 from handlers.reports import (
-    report_callback, balances_callback, delete_expenses_callback, 
+    report_callback, delete_expenses_callback, 
     delete_expense_confirmation_callback
 )
 from handlers.commands import set_rate_command
@@ -59,7 +59,6 @@ def setup_commands(application: Application):
         BotCommand("todo", "📝 Список дел"),
         BotCommand("expenses", "💰 Расходы"),
         BotCommand("report", "📊 Отчет"),
-        BotCommand("balances", "💳 Балансы"),
         BotCommand("group_balances", "👥 Балансы групп"),
         BotCommand("set_rate", "💱 Установить курс валюты"),
         BotCommand("help", "❓ Справка"),
@@ -116,7 +115,6 @@ def setup_handlers(application: Application):
     
     # Report handlers
     application.add_handler(CallbackQueryHandler(report_callback, pattern="^report$"))
-    application.add_handler(CallbackQueryHandler(balances_callback, pattern="^balances$"))
     application.add_handler(CallbackQueryHandler(delete_expenses_callback, pattern="^delete_expenses$"))
     application.add_handler(CallbackQueryHandler(delete_expense_confirmation_callback, pattern="^delete_expense_"))
     

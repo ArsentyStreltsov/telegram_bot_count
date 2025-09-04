@@ -14,9 +14,6 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("💰 Расходы", callback_data="expenses_menu"),
             InlineKeyboardButton("📊 Отчет", callback_data="report")
-        ],
-        [
-            InlineKeyboardButton("💳 Балансы", callback_data="balances")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)

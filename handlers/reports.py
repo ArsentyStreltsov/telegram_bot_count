@@ -14,7 +14,7 @@ from models import User, Expense
 from datetime import datetime
 
 async def report_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle report button"""
+    """Handle report button - combined expenses and balances report"""
     query = update.callback_query
     await query.answer()
     
@@ -22,14 +22,44 @@ async def report_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = next(get_db())
     
     try:
-        # Get expenses by category for current month
+        text = "📊 Полный отчет\n\n"
+        
+        # 1. Expenses by category for current month
+        text += "💰 РАСХОДЫ ПО КАТЕГОРИЯМ:\n"
+        text += "─" * 30 + "\n"
+        
         expenses_by_category = ExpenseService.get_expenses_by_category(db)
         current_month = datetime.now()
         
         if not expenses_by_category:
-            text = "📊 Отчет за текущий месяц\n\nНет расходов в этом месяце"
+            text += "Нет расходов в этом месяце\n\n"
         else:
-            text = format_expense_report(expenses_by_category, current_month)
+            text += format_expense_report(expenses_by_category, current_month)
+            text += "\n\n"
+        
+        # 2. Group balances
+        text += "👥 БАЛАНСЫ ГРУПП:\n"
+        text += "─" * 30 + "\n"
+        
+        from services.group_balance import GroupBalanceService
+        group_balance_text = GroupBalanceService.get_detailed_balance_report(db)
+        
+        # Extract only the group balances part (remove the header)
+        lines = group_balance_text.split('\n')
+        balance_lines = []
+        in_balance_section = False
+        
+        for line in lines:
+            if "📊 Отчет по балансам групп" in line:
+                in_balance_section = True
+                continue
+            if in_balance_section:
+                balance_lines.append(line)
+        
+        if balance_lines:
+            text += '\n'.join(balance_lines)
+        else:
+            text += "Ошибка при загрузке балансов групп\n"
         
         keyboard = back_keyboard("main_menu")
         
@@ -40,26 +70,7 @@ async def report_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     finally:
         db.close()
 
-async def balances_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle balances button - show group balances"""
-    query = update.callback_query
-    await query.answer()
-    
-    # Get database session
-    db = next(get_db())
-    
-    try:
-        # Use new group balance service
-        from services.group_balance import GroupBalanceService
-        text = GroupBalanceService.get_detailed_balance_report(db)
-        keyboard = back_keyboard("main_menu")
-        
-        await query.edit_message_text(text, reply_markup=keyboard)
-        
-    except Exception as e:
-        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
-    finally:
-        db.close()
+
 
 async def delete_expenses_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle delete expenses button"""
