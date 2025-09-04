@@ -128,11 +128,19 @@ class GroupBalanceService:
     def _calculate_category_shares(cls, db: Session, expense, allocations: List[ExpenseAllocation]) -> Dict[int, float]:
         """Calculate how much each user owes for this expense based on actual allocations"""
         
+        print(f"🔍 DEBUG: _calculate_category_shares called for expense_id={expense.id}")
+        print(f"🔍 DEBUG: expense.amount_sek={expense.amount_sek}")
+        print(f"🔍 DEBUG: expense.category={expense.category}")
+        print(f"🔍 DEBUG: allocations count={len(allocations) if allocations else 0}")
+        
         # Если есть аллокации (например, из FlexibleSplitService), используем их
         if allocations:
+            print(f"🔍 DEBUG: Using explicit allocations")
             shares = {}
             for allocation in allocations:
+                print(f"🔍 DEBUG: Allocation: user_id={allocation.user_id}, amount_sek={allocation.amount_sek}")
                 shares[allocation.user_id] = allocation.amount_sek
+            print(f"🔍 DEBUG: Final shares: {shares}")
             return shares
         
         # Иначе используем старую логику по категориям (для обратной совместимости)

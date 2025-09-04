@@ -22,24 +22,19 @@ async def report_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = next(get_db())
     
     try:
-        text = "📊 Полный отчет\n\n"
+        text = ""
         
         # 1. Expenses by category for current month
-        text += "💰 РАСХОДЫ ПО КАТЕГОРИЯМ:\n"
-        text += "─" * 30 + "\n"
-        
         expenses_by_category = ExpenseService.get_expenses_by_category(db)
         current_month = datetime.now()
         
         if not expenses_by_category:
-            text += "Нет расходов в этом месяце\n\n"
+            text += "📊 Нет расходов в этом месяце\n\n"
         else:
             text += format_expense_report(expenses_by_category, current_month)
-            text += "\n\n"
         
         # 2. Group balances
-        text += "👥 БАЛАНСЫ ГРУПП:\n"
-        text += "─" * 30 + "\n"
+        text += "\n👥 Отчет по балансам групп:\n"
         
         from services.group_balance import GroupBalanceService
         group_balance_text = GroupBalanceService.get_detailed_balance_report(db)

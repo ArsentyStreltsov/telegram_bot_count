@@ -46,7 +46,7 @@ def format_expense_report(expenses_by_category: Dict, current_month: datetime) -
     month_name = month_names.get(month_num, current_month.strftime("%B"))
     year = current_month.year
     
-    text = f"📊 Отчет за {month_name} {year}\n\n"
+    text = f"📊 Отчет по тратам за {month_name} {year}\n\n"
     
     total_sek = 0
     for category_value, data in expenses_by_category.items():
@@ -66,7 +66,7 @@ def format_expense_report(expenses_by_category: Dict, current_month: datetime) -
         
         text += f"• {category_name}: {format_amount(amount, Currency.SEK)}\n"
     
-    text += f"\n💰 Общий итог: {format_amount(total_sek, Currency.SEK)}"
+    text += f"\n💰 Общий итог: {format_amount(total_sek, Currency.SEK)}\n\n"
     return text
 
 def format_balance_report(balances: Dict, users: Dict, settlements: List) -> str:

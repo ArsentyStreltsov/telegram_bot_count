@@ -87,20 +87,25 @@ def back_keyboard(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 def split_choice_keyboard() -> InlineKeyboardMarkup:
-    """Split choice keyboard for OTHER category expenses"""
+    """Split choice keyboard for OTHER category expenses - shows participants directly"""
     keyboard = [
         [
-            InlineKeyboardButton("На 5х", callback_data="split_5"),
-            InlineKeyboardButton("На 4х", callback_data="split_4")
+            InlineKeyboardButton("⭕ Сеня", callback_data="participant_senya"),
+            InlineKeyboardButton("⭕ Даша", callback_data="participant_dasha")
         ],
         [
-            InlineKeyboardButton("На 3х", callback_data="split_3"),
-            InlineKeyboardButton("На 2х", callback_data="split_2")
+            InlineKeyboardButton("⭕ Катя", callback_data="participant_katya"),
+            InlineKeyboardButton("⭕ Дима", callback_data="participant_dima")
         ],
         [
-            InlineKeyboardButton("Без разделения", callback_data="split_families")
+            InlineKeyboardButton("⭕ Миша", callback_data="participant_misha")
         ],
-        [InlineKeyboardButton("🔙 Назад", callback_data="add_expense")]
+        [
+            InlineKeyboardButton("❌ Без разделения", callback_data="split_families")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data="add_expense")
+        ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -133,6 +138,45 @@ def pagination_keyboard(
         keyboard.append(nav_buttons)
     
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
+    return InlineKeyboardMarkup(keyboard)
+
+def participants_selection_keyboard(selected_participants: set = None) -> InlineKeyboardMarkup:
+    """Keyboard for selecting participants for OTHER category expenses"""
+    if selected_participants is None:
+        selected_participants = set()
+    
+    # Map participant names to telegram_ids
+    participant_map = {
+        "senya": 804085588,
+        "dasha": 916228993,
+        "dima": 350653235,
+        "katya": 252901018,
+        "misha": 6379711500
+    }
+    
+    keyboard = []
+    
+    # Create participant buttons with visual indicators
+    for name, telegram_id in participant_map.items():
+        if telegram_id in selected_participants:
+            # Selected - show green checkmark
+            button_text = f"✅ {name.title()}"
+        else:
+            # Not selected - show red circle
+            button_text = f"⭕ {name.title()}"
+        
+        keyboard.append([
+            InlineKeyboardButton(button_text, callback_data=f"participant_{name}")
+        ])
+    
+    # Add action buttons
+    keyboard.append([
+        InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("⬅️ Назад", callback_data="back_to_split_choice")
+    ])
+    
     return InlineKeyboardMarkup(keyboard)
 
 def expenses_menu_keyboard() -> InlineKeyboardMarkup:

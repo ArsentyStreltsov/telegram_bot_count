@@ -16,7 +16,7 @@ from handlers.start import (
 )
 # Убрали обработчик меню
 from handlers.expense import (
-    expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback, split_choice_callback
+    expenses_menu_callback, add_expense_callback, handle_amount_input, currency_callback, split_choice_callback, participant_selection_callback
 )
 from handlers.messages import handle_text_message, handle_shopping_category_callback
 from handlers.shopping import (
@@ -96,6 +96,7 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(currency_callback, pattern="^currency_"))
     application.add_handler(CallbackQueryHandler(handle_shopping_category_callback, pattern="^category_"))
     application.add_handler(CallbackQueryHandler(split_choice_callback, pattern="^split_"))
+    application.add_handler(CallbackQueryHandler(participant_selection_callback, pattern="^(participant_|confirm_participants|back_to_split_choice)$"))
 
     # Shopping handlers
     application.add_handler(CallbackQueryHandler(shopping_list_callback, pattern="^shopping_list$"))
