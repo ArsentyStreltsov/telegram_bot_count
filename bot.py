@@ -91,12 +91,15 @@ def setup_handlers(application: Application):
     
     # Callback query handlers
     application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^main_menu$"))
+    # Expense handlers
+    print("🔍 DEBUG: Registering expense handlers...")
     application.add_handler(CallbackQueryHandler(expenses_menu_callback, pattern="^expenses_menu$"))
     application.add_handler(CallbackQueryHandler(add_expense_callback, pattern="^add_expense$"))
     application.add_handler(CallbackQueryHandler(currency_callback, pattern="^currency_"))
     application.add_handler(CallbackQueryHandler(handle_shopping_category_callback, pattern="^category_"))
     application.add_handler(CallbackQueryHandler(split_choice_callback, pattern="^split_"))
     application.add_handler(CallbackQueryHandler(participant_selection_callback, pattern="^(participant_|confirm_participants|back_to_split_choice)$"))
+    print("🔍 DEBUG: Expense handlers registered")
 
     # Shopping handlers
     application.add_handler(CallbackQueryHandler(shopping_list_callback, pattern="^shopping_list$"))

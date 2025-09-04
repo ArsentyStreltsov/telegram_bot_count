@@ -252,10 +252,16 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
     
+    print(f"🔍 DEBUG: split_choice_callback called with callback_data: {query.data}")
+    
     user_id = update.effective_user.id
     user_states = context.bot_data.get('user_states', {})
     
+    print(f"🔍 DEBUG: user_id: {user_id}")
+    print(f"🔍 DEBUG: user_states: {user_states}")
+    
     if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
+        print(f"❌ DEBUG: User state error - user_id: {user_id}, action: {user_states.get(user_id, {}).get('action', 'NOT_FOUND')}")
         await query.edit_message_text("❌ Ошибка состояния")
         return
     
@@ -263,6 +269,8 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     callback_data = query.data
     
     if callback_data.startswith("participant_"):
+        print(f"🔍 DEBUG: Handling participant selection: {callback_data}")
+        
         # Handle participant selection directly
         user_states[user_id]['step'] = 'select_participants'
         if 'selected_participants' not in user_states[user_id]:
@@ -270,6 +278,7 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
         
         # Toggle participant selection
         participant_name = callback_data.replace("participant_", "")
+        print(f"🔍 DEBUG: Participant name: {participant_name}")
         
         # Map participant names to telegram_ids
         participant_map = {
@@ -284,12 +293,16 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
             telegram_id = participant_map[participant_name]
             selected_participants = user_states[user_id]['selected_participants']
             
+            print(f"🔍 DEBUG: Before toggle - selected_participants: {selected_participants}")
+            
             if telegram_id in selected_participants:
                 selected_participants.remove(telegram_id)
                 print(f"🔍 DEBUG: Убрал {participant_name} (telegram_id: {telegram_id}) из выбора")
             else:
                 selected_participants.add(telegram_id)
                 print(f"🔍 DEBUG: Добавил {participant_name} (telegram_id: {telegram_id}) в выбор")
+            
+            print(f"🔍 DEBUG: After toggle - selected_participants: {selected_participants}")
             
             # Update keyboard to show current selection
             from utils.keyboards import split_choice_keyboard
@@ -311,7 +324,10 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
             if selected_participants:
                 keyboard.inline_keyboard.insert(-2, [InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")])
             
+            print(f"🔍 DEBUG: Updating message with new keyboard")
             await query.edit_message_text(text, reply_markup=keyboard)
+        else:
+            print(f"❌ DEBUG: Unknown participant name: {participant_name}")
         return
     
     elif callback_data == "split_families":
@@ -327,10 +343,16 @@ async def participant_selection_callback(update: Update, context: ContextTypes.D
     query = update.callback_query
     await query.answer()
     
+    print(f"🔍 DEBUG: participant_selection_callback called with callback_data: {query.data}")
+    
     user_id = update.effective_user.id
     user_states = context.bot_data.get('user_states', {})
     
+    print(f"🔍 DEBUG: user_id: {user_id}")
+    print(f"🔍 DEBUG: user_states: {user_states}")
+    
     if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
+        print(f"❌ DEBUG: User state error in participant_selection_callback")
         await query.edit_message_text("❌ Ошибка состояния")
         return
     
