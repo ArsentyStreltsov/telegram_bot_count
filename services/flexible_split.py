@@ -40,44 +40,47 @@ class FlexibleSplitService:
 
     @classmethod
     def calculate_participant_split(cls, db: Session, amount: float, 
-                                  selected_participant_ids: Set[int], 
+                                  selected_participant_telegram_ids: Set[int], 
                                   payer_telegram_id: int) -> Dict[int, float]:
-        """Calculate split based on selected participants"""
+        """Calculate split based on selected participants - only opposite group pays"""
         
-        print(f"🔍 DEBUG: calculate_participant_split called")
-        print(f"🔍 DEBUG: amount={amount}, selected_participant_ids={selected_participant_ids}, payer_telegram_id={payer_telegram_id}")
-        
-        if not selected_participant_ids:
-            print("🔍 DEBUG: No participants selected")
+        if not selected_participant_telegram_ids:
             return {}
-        
-        # Исключаем плательщика из расчета долга
-        participants_without_payer = selected_participant_ids.copy()
         
         # Получаем пользователя-плательщика
         payer_user = cls.get_user_by_telegram_id(db, payer_telegram_id)
-        if payer_user:
-            print(f"🔍 DEBUG: Payer user: {payer_user.first_name} (ID: {payer_user.id})")
-            if payer_user.id in participants_without_payer:
-                participants_without_payer.remove(payer_user.id)
-                print(f"🔍 DEBUG: Removed payer from participants")
-        
-        if not participants_without_payer:
-            print("🔍 DEBUG: No participants left after removing payer")
+        if not payer_user:
             return {}
         
-        print(f"🔍 DEBUG: Participants without payer: {participants_without_payer}")
+        # Определяем, к какой группе принадлежит плательщик
+        if payer_user.telegram_id in cls.GROUP_1_IDS:
+            # Плательщик из группы 1 (Сеня + Даша), долг на группу 2
+            opposite_group_ids = cls.GROUP_2_IDS
+        else:
+            # Плательщик из группы 2 (Дима + Катя + Миша), долг на группу 1
+            opposite_group_ids = cls.GROUP_1_IDS
         
-        # Рассчитываем долю на каждого участника (кроме плательщика)
-        share_per_participant = amount / len(participants_without_payer)
-        print(f"🔍 DEBUG: Share per participant: {share_per_participant}")
+        # Находим участников из противоположной группы
+        opposite_group_participants = []
+        for participant_telegram_id in selected_participant_telegram_ids:
+            if participant_telegram_id in opposite_group_ids:
+                participant_user = db.query(User).filter(User.telegram_id == participant_telegram_id).first()
+                if participant_user:
+                    opposite_group_participants.append(participant_user.id)
+        
+        if not opposite_group_participants:
+            # Если нет участников из противоположной группы, никто ничего не должен
+            return {}
+        
+        # Рассчитываем долю на каждого участника из противоположной группы
+        # Делим сумму на общее количество участников, но долг только с противоположной группы
+        total_participants = len(selected_participant_telegram_ids)
+        share_per_participant = amount / total_participants
         
         allocations = {}
-        for participant_id in participants_without_payer:
+        for participant_id in opposite_group_participants:
             allocations[participant_id] = share_per_participant
-            print(f"🔍 DEBUG: Allocation for user_id {participant_id}: {share_per_participant}")
         
-        print(f"🔍 DEBUG: Final allocations: {allocations}")
         return allocations
 
     @classmethod
@@ -85,31 +88,20 @@ class FlexibleSplitService:
                              payer_telegram_id: int) -> Dict[int, float]:
         """Calculate split for 'За другую семью' - entire amount goes to opposite group"""
         
-        print(f"🔍 DEBUG: calculate_family_split called with amount={amount}, payer_telegram_id={payer_telegram_id}")
-        print(f"🔍 DEBUG: GROUP_1_IDS = {cls.GROUP_1_IDS}")
-        print(f"🔍 DEBUG: GROUP_2_IDS = {cls.GROUP_2_IDS}")
-        
         # Определяем, к какой группе принадлежит плательщик
         if payer_telegram_id in cls.GROUP_1_IDS:
             # Плательщик из группы 1 (Сеня + Даша), весь долг на группу 2
             target_group_ids = cls.GROUP_2_IDS
-            print(f"🔍 DEBUG: Плательщик из группы 1, целевая группа: {target_group_ids}")
         else:
             # Плательщик из группы 2 (Дима + Катя + Миша), весь долг на группу 1
             target_group_ids = cls.GROUP_1_IDS
-            print(f"🔍 DEBUG: Плательщик из группы 2, целевая группа: {target_group_ids}")
         
         # Получаем пользователей целевой группы
         target_users = db.query(User).filter(
             User.telegram_id.in_(target_group_ids)
         ).all()
         
-        print(f"🔍 DEBUG: Найдено пользователей в целевой группе: {len(target_users)}")
-        for user in target_users:
-            print(f"🔍 DEBUG: Пользователь: {user.first_name} (ID: {user.id}, telegram_id: {user.telegram_id})")
-        
         if not target_users:
-            print("❌ DEBUG: Нет пользователей в целевой группе!")
             return {}
         
         # Делим сумму поровну между всеми в целевой группе
@@ -117,9 +109,7 @@ class FlexibleSplitService:
         allocations = {}
         for user in target_users:
             allocations[user.id] = share_per_user
-            print(f"🔍 DEBUG: Аллокация для {user.first_name}: {share_per_user}")
         
-        print(f"🔍 DEBUG: Итоговые аллокации: {allocations}")
         return allocations
 
     @classmethod
@@ -135,24 +125,17 @@ class FlexibleSplitService:
             return "Неизвестный тип разделения"
 
     @classmethod
-    def get_participant_selection_text(cls, selected_participants: Set[int], db: Session = None) -> str:
+    def get_participant_selection_text(cls, selected_participants: Set[int], db: Session) -> str:
         """Get text showing currently selected participants"""
         if not selected_participants:
             return "👥 Выберите участников расхода:\n\nНикто не выбран"
         
-        # Map telegram_ids to names
-        telegram_to_name = {
-            804085588: "Сеня",
-            916228993: "Даша", 
-            350653235: "Дима",
-            252901018: "Катя",
-            6379711500: "Миша"
-        }
-        
         participant_names = []
-        for telegram_id in selected_participants:
-            name = telegram_to_name.get(telegram_id, f"User {telegram_id}")
-            participant_names.append(f"✅ {name}")
+        for user_id in selected_participants:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                name = cls.get_user_name(user)
+                participant_names.append(f"✅ {name}")
         
         text = "👥 Выбранные участники:\n\n"
         text += "\n".join(participant_names)

@@ -1,17 +1,40 @@
 """
 Expense handlers
 """
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
-from utils.keyboards import category_keyboard, back_keyboard, currency_selection_keyboard, expenses_menu_keyboard, participants_selection_keyboard
+from utils.keyboards import category_keyboard, back_keyboard, currency_selection_keyboard, expenses_menu_keyboard, split_choice_keyboard
 from utils.texts import get_category_name, get_currency_name, format_amount
 from services.expense_service import ExpenseService
 from models import ExpenseCategory, Currency, Profile, User
 from typing import Set
+from telegram.error import BadRequest
 import re
+
+def get_participant_selection_display(selected_participants: Set[int], db, amount: float, currency, category_name: str) -> str:
+    """Get display text for participant selection"""
+    text = f"💰 Сумма: {format_amount(amount, currency)}\n"
+    text += f"📂 Категория: {category_name}\n\n"
+    text += "👥 Выберите людей, которые участвовали в этом расходе. Долг будет рассчитан только с участников противоположной группы\n\n"
+    
+    if not selected_participants:
+        text += "Никто не выбран"
+    else:
+        participant_names = []
+        for telegram_id in selected_participants:
+            user = db.query(User).filter(User.telegram_id == telegram_id).first()
+            if user:
+                name = user.first_name or user.username or f"User {user.telegram_id}"
+                participant_names.append(f"✅ {name}")
+        
+        text += "Выбранные участники:\n"
+        text += "\n".join(participant_names)
+        text += f"\n\nВсего участников: {len(selected_participants)}"
+    
+    return text
 
 def handle_db_error(e: Exception, action: str) -> tuple[str, InlineKeyboardMarkup]:
     """Handle database errors with user-friendly messages"""
@@ -252,181 +275,125 @@ async def split_choice_callback(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
     
-    print(f"🔍 DEBUG: split_choice_callback called with callback_data: {query.data}")
-    
     user_id = update.effective_user.id
     user_states = context.bot_data.get('user_states', {})
     
-    print(f"🔍 DEBUG: user_id: {user_id}")
-    print(f"🔍 DEBUG: user_states: {user_states}")
-    
     if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
-        print(f"❌ DEBUG: User state error - user_id: {user_id}, action: {user_states.get(user_id, {}).get('action', 'NOT_FOUND')}")
         await query.edit_message_text("❌ Ошибка состояния")
         return
     
-    # Parse split type from callback data
-    callback_data = query.data
+    # Initialize selected participants if not exists
+    if 'selected_participants' not in user_states[user_id]:
+        user_states[user_id]['selected_participants'] = []
     
-    if callback_data.startswith("participant_"):
-        print(f"🔍 DEBUG: Handling participant selection: {callback_data}")
-        
-        # Handle participant selection directly
-        user_states[user_id]['step'] = 'select_participants'
-        if 'selected_participants' not in user_states[user_id]:
-            user_states[user_id]['selected_participants'] = set()
-        
-        # Toggle participant selection
-        participant_name = callback_data.replace("participant_", "")
-        print(f"🔍 DEBUG: Participant name: {participant_name}")
-        
-        # Map participant names to telegram_ids
-        participant_map = {
-            "senya": 804085588,
-            "dasha": 916228993,
-            "dima": 350653235,
-            "katya": 252901018,
-            "misha": 6379711500
-        }
-        
-        if participant_name in participant_map:
-            telegram_id = participant_map[participant_name]
-            selected_participants = user_states[user_id]['selected_participants']
-            
-            print(f"🔍 DEBUG: Before toggle - selected_participants: {selected_participants}")
-            
-            if telegram_id in selected_participants:
-                selected_participants.remove(telegram_id)
-                print(f"🔍 DEBUG: Убрал {participant_name} (telegram_id: {telegram_id}) из выбора")
-            else:
-                selected_participants.add(telegram_id)
-                print(f"🔍 DEBUG: Добавил {participant_name} (telegram_id: {telegram_id}) в выбор")
-            
-            print(f"🔍 DEBUG: After toggle - selected_participants: {selected_participants}")
-            
-            # Update keyboard to show current selection
-            from utils.keyboards import split_choice_keyboard
-            keyboard = split_choice_keyboard()
-            
-            # Update button texts based on selection
-            for row in keyboard.inline_keyboard:
-                for button in row:
-                    if button.callback_data.startswith("participant_"):
-                        name = button.callback_data.replace("participant_", "")
-                        if name in participant_map:
-                            telegram_id = participant_map[name]
-                            if telegram_id in selected_participants:
-                                button.text = f"✅ {name.title()}"
-                            else:
-                                button.text = f"⭕ {name.title()}"
-            
-            # Add confirm button if participants are selected
-            if selected_participants:
-                keyboard.inline_keyboard.insert(-2, [InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")])
-            
-            print(f"🔍 DEBUG: Updating message with new keyboard")
-            
-            # Create text for the message
-            text = "👥 Выберите между кем разделить расход:\n\n"
-            text += "P.S. если ты заплатил за другого и расход делить не надо - выбирай 'Без разделения'"
-            
-            await query.edit_message_text(text, reply_markup=keyboard)
-        else:
-            print(f"❌ DEBUG: Unknown participant name: {participant_name}")
-        return
-    
-    elif callback_data == "split_families":
-        # Create expense with family split
-        await create_expense_with_split(update, context, "split_families")
-        return
-    
-    else:
-        await query.edit_message_text("❌ Неизвестный тип разделения")
-
-async def participant_selection_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle participant selection for OTHER category expenses"""
-    query = update.callback_query
-    await query.answer()
-    
-    print(f"🔍 DEBUG: participant_selection_callback called with callback_data: {query.data}")
-    
-    user_id = update.effective_user.id
-    user_states = context.bot_data.get('user_states', {})
-    
-    print(f"🔍 DEBUG: user_id: {user_id}")
-    print(f"🔍 DEBUG: user_states: {user_states}")
-    
-    if user_id not in user_states or user_states[user_id]['action'] != 'add_expense':
-        print(f"❌ DEBUG: User state error in participant_selection_callback")
-        await query.edit_message_text("❌ Ошибка состояния")
-        return
-    
+    # Parse callback data
     callback_data = query.data
     
     if callback_data == "confirm_participants":
-        # Confirm participant selection and create expense
-        selected_participants = user_states[user_id].get('selected_participants', set())
+        # Confirm selection and create expense
+        selected_participants = set(user_states[user_id].get('selected_participants', []))
         
         if len(selected_participants) < 2:
             await query.edit_message_text(
                 "❌ Выберите минимум 2 участника для разделения расхода",
-                reply_markup=back_keyboard("back_to_split_choice")
+                reply_markup=back_keyboard("add_expense")
+            )
+            return
+        
+        # Проверяем, что выбраны участники из РАЗНЫХ групп
+        from services.flexible_split import FlexibleSplitService
+        
+        # Проверяем, что есть участники из группы 1
+        group_1_selected = any(telegram_id in FlexibleSplitService.GROUP_1_IDS for telegram_id in selected_participants)
+        # Проверяем, что есть участники из группы 2  
+        group_2_selected = any(telegram_id in FlexibleSplitService.GROUP_2_IDS for telegram_id in selected_participants)
+        
+        # Проверяем, что НЕ выбраны участники только из одной группы
+        only_group_1 = group_1_selected and not group_2_selected
+        only_group_2 = group_2_selected and not group_1_selected
+        
+        if only_group_1 or only_group_2:
+            if only_group_1:
+                group_name = "Даша + Сеня"
+            else:
+                group_name = "Дима + Катя + Миша"
+            
+            await query.edit_message_text(
+                f"❌ Нельзя выбрать только участников из группы '{group_name}'. Выберите участников из РАЗНЫХ групп!",
+                reply_markup=back_keyboard("add_expense")
             )
             return
         
         await create_expense_with_split(update, context, "participants", selected_participants)
         return
     
-    elif callback_data == "back_to_split_choice":
-        # Go back to split choice
-        user_states[user_id]['step'] = 'split_choice'
-        user_states[user_id].pop('selected_participants', None)
-        
-        from utils.keyboards import split_choice_keyboard
-        text = "👥 Выберите между кем разделить расход:\n\n"
-        text += "P.S. если ты заплатил за другого и расход делить не надо - выбирай 'Без разделения'"
-        
-        keyboard = split_choice_keyboard()
-        await query.edit_message_text(text, reply_markup=keyboard)
+    elif callback_data == "no_split":
+        # Create expense without splitting (like old "split_families")
+        await create_expense_with_split(update, context, "split_families")
         return
     
     elif callback_data.startswith("participant_"):
         # Toggle participant selection
         participant_name = callback_data.replace("participant_", "")
         
-        # Map participant names to telegram_ids
+        # Map participant names to user IDs
         participant_map = {
-            "senya": 804085588,
-            "dasha": 916228993,
-            "dima": 350653235,
-            "katya": 252901018,
-            "misha": 6379711500
+            "senya": 804085588,  # Арсентий
+            "dasha": 916228993,  # Даша
+            "dima": 350653235,   # Дима
+            "katya": 252901018,  # Катя
+            "misha": 6379711500  # Миша
         }
         
         if participant_name in participant_map:
             telegram_id = participant_map[participant_name]
-            
-            # Toggle selection in telegram_ids (not user IDs)
-            selected_participants = user_states[user_id].get('selected_participants', set())
-            
-            if telegram_id in selected_participants:
-                selected_participants.remove(telegram_id)
-                print(f"🔍 DEBUG: Убрал {participant_name} (telegram_id: {telegram_id}) из выбора")
-            else:
-                selected_participants.add(telegram_id)
-                print(f"🔍 DEBUG: Добавил {participant_name} (telegram_id: {telegram_id}) в выбор")
-            
-            user_states[user_id]['selected_participants'] = selected_participants
-            
-            # Update display with new keyboard
-            from services.flexible_split import FlexibleSplitService
-            text = FlexibleSplitService.get_participant_selection_text(
-                selected_participants, db=None  # We don't need db for this
-            )
-            keyboard = participants_selection_keyboard(selected_participants)
-            
-            await query.edit_message_text(text, reply_markup=keyboard)
+            db = next(get_db())
+            try:
+                user = db.query(User).filter(User.telegram_id == telegram_id).first()
+                if user:
+                    # Convert list to set for manipulation
+                    selected_participants = set(user_states[user_id].get('selected_participants', []))
+                    
+                    if telegram_id in selected_participants:
+                        selected_participants.remove(telegram_id)
+                        print(f"DEBUG: Removed {user.first_name} from selection")
+                    else:
+                        selected_participants.add(telegram_id)
+                        print(f"DEBUG: Added {user.first_name} to selection")
+                    
+                    # Store back as list
+                    user_states[user_id]['selected_participants'] = list(selected_participants)
+                    print(f"DEBUG: Current selection: {selected_participants}")
+                    
+                    # Update display with current selection
+                    amount = user_states[user_id]['amount']
+                    currency = user_states[user_id]['currency']
+                    category = user_states[user_id]['category']
+                    base_name = get_category_name(category)
+                    custom = user_states[user_id].get('custom_category_name')
+                    category_name = f"{base_name}: {custom}" if custom else base_name
+                    
+                    text = get_participant_selection_display(selected_participants, db, amount, currency, category_name)
+                    keyboard = split_choice_keyboard(selected_participants)
+                    
+                    try:
+                        await query.edit_message_text(text, reply_markup=keyboard)
+                    except BadRequest as e:
+                        if "Message is not modified" in str(e):
+                            await query.answer("Без изменений", show_alert=False)
+                        else:
+                            raise
+                else:
+                    print(f"DEBUG: User not found for telegram_id {telegram_id}")
+            finally:
+                db.close()
+        else:
+            print(f"DEBUG: Unknown participant name: {participant_name}")
         return
+    
+    else:
+        await query.edit_message_text("❌ Неизвестный тип разделения")
+
 
 async def create_expense_with_split(update: Update, context: ContextTypes.DEFAULT_TYPE, 
                                   split_type: str, selected_participants: Set[int] = None):
@@ -460,33 +427,14 @@ async def create_expense_with_split(update: Update, context: ContextTypes.DEFAUL
         
         if split_type == "split_families":
             # Calculate family split allocations
-            print(f"🔍 DEBUG: Creating expense with split_type='split_families'")
-            print(f"🔍 DEBUG: amount={amount}, user.telegram_id={user.telegram_id}")
-            
             allocations = FlexibleSplitService.calculate_family_split(
                 db, amount, user.telegram_id
             )
-            
-            print(f"🔍 DEBUG: Allocations calculated: {allocations}")
         elif split_type == "participants" and selected_participants:
             # Calculate participant split allocations
-            print(f"🔍 DEBUG: Creating expense with split_type='participants'")
-            print(f"🔍 DEBUG: selected_participants (telegram_ids): {selected_participants}")
-            print(f"🔍 DEBUG: user.telegram_id: {user.telegram_id}")
-            
-            # Convert telegram_ids to user_ids for the service
-            user_ids = set()
-            for telegram_id in selected_participants:
-                participant_user = db.query(User).filter(User.telegram_id == telegram_id).first()
-                if participant_user:
-                    user_ids.add(participant_user.id)
-                    print(f"🔍 DEBUG: telegram_id {telegram_id} -> user_id {participant_user.id}")
-            
             allocations = FlexibleSplitService.calculate_participant_split(
-                db, amount, user_ids, user.telegram_id
+                db, amount, selected_participants, user.telegram_id
             )
-            
-            print(f"🔍 DEBUG: Participant allocations calculated: {allocations}")
         else:
             allocations = {}
         
@@ -514,8 +462,8 @@ async def create_expense_with_split(update: Update, context: ContextTypes.DEFAUL
             split_description = "За другую семью"
         elif split_type == "participants" and selected_participants:
             participant_names = []
-            for participant_id in selected_participants:
-                participant_user = db.query(User).filter(User.id == participant_id).first()
+            for participant_telegram_id in selected_participants:
+                participant_user = db.query(User).filter(User.telegram_id == participant_telegram_id).first()
                 if participant_user:
                     name = participant_user.first_name or participant_user.username or f"User {participant_user.telegram_id}"
                     participant_names.append(name)
@@ -526,7 +474,7 @@ async def create_expense_with_split(update: Update, context: ContextTypes.DEFAUL
         text = f"✅ Расход создан!\n\n"
         text += f"💰 Сумма: {amount_text}\n"
         text += f"📁 Категория: {category_text}\n"
-        text += f"👥 Разделение: {split_description}"
+        text += f"👥 {split_description}"
         
         from utils.keyboards import back_keyboard
         keyboard = back_keyboard("main_menu")

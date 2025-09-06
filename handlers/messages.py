@@ -102,12 +102,13 @@ async def handle_custom_category_input(update: Update, context: ContextTypes.DEF
     from utils.texts import get_category_name, get_currency_name, format_amount
     from utils.keyboards import split_choice_keyboard
     
-    text = f"💰 Сумма: {format_amount(user_state['amount'], user_state['currency'])}\n"
-    text += f"📂 Категория: {user_state['custom_category_name']}\n\n"
-    text += "👥 Выберите, как разделить расход:\n\n"
-    text += "P.S. если ты заплатил за другого и расход делить не надо - выбирай 'без разделения'"
+    # Initialize selected participants
+    user_state['selected_participants'] = []
     
-    keyboard = split_choice_keyboard()
+    from handlers.expense import get_participant_selection_display
+    text = get_participant_selection_display(set(), db, user_state['amount'], user_state['currency'], user_state['custom_category_name'])
+    
+    keyboard = split_choice_keyboard(set())
     
     await update.message.reply_text(text, reply_markup=keyboard)
 

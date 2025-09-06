@@ -96,27 +96,17 @@ class ExpenseService:
                 db.add(allocation)
         elif split_type == "split_families":
             # Use family split logic
-            print(f"🔍 DEBUG: Creating expense with split_type='split_families'")
-            print(f"🔍 DEBUG: amount_sek={amount_sek}, payer_id={payer_id}")
-            
             from services.flexible_split import FlexibleSplitService
-            
-            # Получаем telegram_id плательщика
+            # Get payer's telegram_id
             payer_user = db.query(User).filter(User.id == payer_id).first()
-            if not payer_user:
-                print(f"❌ DEBUG: Пользователь с ID {payer_id} не найден!")
-                return expense
-            
-            print(f"🔍 DEBUG: Плательщик: {payer_user.first_name} (telegram_id: {payer_user.telegram_id})")
-            
-            family_allocations = FlexibleSplitService.calculate_family_split(
-                db, amount_sek, payer_user.telegram_id
-            )
-            
-            print(f"🔍 DEBUG: Family allocations received: {family_allocations}")
+            if payer_user:
+                family_allocations = FlexibleSplitService.calculate_family_split(
+                    db, amount_sek, payer_user.telegram_id
+                )
+            else:
+                family_allocations = {}
             
             for user_id, share_amount in family_allocations.items():
-                print(f"🔍 DEBUG: Creating allocation for user_id={user_id}, share_amount={share_amount}")
                 allocation = ExpenseAllocation(
                     expense_id=expense.id,
                     user_id=user_id,
@@ -124,13 +114,17 @@ class ExpenseService:
                     weight_used=1.0
                 )
                 db.add(allocation)
-                print(f"🔍 DEBUG: Allocation added to session")
         elif split_type == "participants" and selected_participants:
             # Use participant selection logic
             from services.flexible_split import FlexibleSplitService
-            participant_allocations = FlexibleSplitService.calculate_participant_split(
-                db, amount_sek, selected_participants, payer_id
-            )
+            # Get payer's telegram_id
+            payer_user = db.query(User).filter(User.id == payer_id).first()
+            if payer_user:
+                participant_allocations = FlexibleSplitService.calculate_participant_split(
+                    db, amount_sek, selected_participants, payer_user.telegram_id
+                )
+            else:
+                participant_allocations = {}
             
             for user_id, share_amount in participant_allocations.items():
                 allocation = ExpenseAllocation(

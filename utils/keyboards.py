@@ -86,22 +86,47 @@ def back_keyboard(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
     keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data=callback_data)]]
     return InlineKeyboardMarkup(keyboard)
 
-def split_choice_keyboard() -> InlineKeyboardMarkup:
-    """Split choice keyboard for OTHER category expenses - shows participants directly"""
+def split_choice_keyboard(selected_participants: set = None) -> InlineKeyboardMarkup:
+    """Split choice keyboard for OTHER category expenses - shows all participants directly"""
+    if selected_participants is None:
+        selected_participants = set()
+    
+    # Map participant names to telegram_ids
+    participant_map = {
+        "senya": 804085588,
+        "dasha": 916228993,
+        "dima": 350653235,
+        "katya": 252901018,
+        "misha": 6379711500
+    }
+    
+    # Проверяем, выбраны ли участники из РАЗНЫХ групп
+    from services.flexible_split import FlexibleSplitService
+    group_1_selected = any(telegram_id in FlexibleSplitService.GROUP_1_IDS for telegram_id in selected_participants)
+    group_2_selected = any(telegram_id in FlexibleSplitService.GROUP_2_IDS for telegram_id in selected_participants)
+    
+    # Можно подтвердить только если есть участники из ОБЕИХ групп (не только из одной)
+    only_group_1 = group_1_selected and not group_2_selected
+    only_group_2 = group_2_selected and not group_1_selected
+    can_confirm = len(selected_participants) >= 2 and not (only_group_1 or only_group_2)
+    
     keyboard = [
         [
-            InlineKeyboardButton("⭕ Сеня", callback_data="participant_senya"),
-            InlineKeyboardButton("⭕ Даша", callback_data="participant_dasha")
+            InlineKeyboardButton("✅ Арсентий" if 804085588 in selected_participants else "👤 Арсентий", callback_data="participant_senya"),
+            InlineKeyboardButton("✅ Даша" if 916228993 in selected_participants else "👤 Даша", callback_data="participant_dasha")
         ],
         [
-            InlineKeyboardButton("⭕ Катя", callback_data="participant_katya"),
-            InlineKeyboardButton("⭕ Дима", callback_data="participant_dima")
+            InlineKeyboardButton("✅ Катя" if 252901018 in selected_participants else "👤 Катя", callback_data="participant_katya"),
+            InlineKeyboardButton("✅ Дима" if 350653235 in selected_participants else "👤 Дима", callback_data="participant_dima")
         ],
         [
-            InlineKeyboardButton("⭕ Миша", callback_data="participant_misha")
+            InlineKeyboardButton("✅ Миша" if 6379711500 in selected_participants else "👤 Миша", callback_data="participant_misha")
         ],
         [
-            InlineKeyboardButton("❌ Без разделения", callback_data="split_families")
+            InlineKeyboardButton("❌ Без разделения", callback_data="no_split")
+        ],
+        [
+            InlineKeyboardButton("✅ Подтвердить" if can_confirm else "⏳ Подтвердить", callback_data="confirm_participants")
         ],
         [
             InlineKeyboardButton("⬅️ Назад", callback_data="add_expense")
@@ -140,43 +165,27 @@ def pagination_keyboard(
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
-def participants_selection_keyboard(selected_participants: set = None) -> InlineKeyboardMarkup:
+def participants_selection_keyboard() -> InlineKeyboardMarkup:
     """Keyboard for selecting participants for OTHER category expenses"""
-    if selected_participants is None:
-        selected_participants = set()
-    
-    # Map participant names to telegram_ids
-    participant_map = {
-        "senya": 804085588,
-        "dasha": 916228993,
-        "dima": 350653235,
-        "katya": 252901018,
-        "misha": 6379711500
-    }
-    
-    keyboard = []
-    
-    # Create participant buttons with visual indicators
-    for name, telegram_id in participant_map.items():
-        if telegram_id in selected_participants:
-            # Selected - show green checkmark
-            button_text = f"✅ {name.title()}"
-        else:
-            # Not selected - show red circle
-            button_text = f"⭕ {name.title()}"
-        
-        keyboard.append([
-            InlineKeyboardButton(button_text, callback_data=f"participant_{name}")
-        ])
-    
-    # Add action buttons
-    keyboard.append([
-        InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")
-    ])
-    keyboard.append([
-        InlineKeyboardButton("⬅️ Назад", callback_data="back_to_split_choice")
-    ])
-    
+    keyboard = [
+        [
+            InlineKeyboardButton("👤 Сеня", callback_data="participant_senya"),
+            InlineKeyboardButton("👤 Даша", callback_data="participant_dasha")
+        ],
+        [
+            InlineKeyboardButton("👤 Дима", callback_data="participant_dima"),
+            InlineKeyboardButton("👤 Катя", callback_data="participant_katya")
+        ],
+        [
+            InlineKeyboardButton("👤 Миша", callback_data="participant_misha")
+        ],
+        [
+            InlineKeyboardButton("✅ Подтвердить выбор", callback_data="confirm_participants")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data="back_to_split_choice")
+        ]
+    ]
     return InlineKeyboardMarkup(keyboard)
 
 def expenses_menu_keyboard() -> InlineKeyboardMarkup:

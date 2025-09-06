@@ -97,13 +97,24 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from handlers.reports import report_callback
     
     # Create a mock callback query for compatibility
-    update.callback_query = type('MockCallbackQuery', (), {
-        'data': 'report',
-        'answer': lambda: None,
-        'edit_message_text': lambda text, reply_markup=None: update.message.reply_text(text, reply_markup=reply_markup)
+    class MockCallbackQuery:
+        def __init__(self, message):
+            self.data = 'report'
+            self.message = message
+        
+        async def answer(self):
+            pass
+        
+        async def edit_message_text(self, text, reply_markup=None):
+            await self.message.reply_text(text, reply_markup=reply_markup)
+    
+    # Create mock update with callback_query
+    mock_update = type('MockUpdate', (), {
+        'callback_query': MockCallbackQuery(update.message),
+        'effective_user': update.effective_user
     })()
     
-    await report_callback(update, context)
+    await report_callback(mock_update, context)
 
 async def balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /balances command - show group balances"""
