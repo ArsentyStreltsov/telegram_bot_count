@@ -10,6 +10,48 @@ from sqlalchemy.orm import Session
 from services.duty_service import DutyService
 from utils.keyboards import back_keyboard
 from db import get_db
+from models import DutySchedule
+
+
+def sort_duties_by_meal_order(duties: List[DutySchedule]) -> List[DutySchedule]:
+    """Sort duties in logical meal order: breakfast -> lunch -> dinner, with cleaning after each"""
+    def get_meal_order(duty):
+        task_name = duty.task.name.lower()
+        
+        # Breakfast tasks
+        if "завтрак" in task_name:
+            if "приготовить" in task_name:
+                return 1  # Cook breakfast
+            elif "убрать" in task_name or "посуду" in task_name:
+                return 2  # Clean after breakfast
+        
+        # Lunch tasks  
+        elif "обед" in task_name:
+            if "приготовить" in task_name:
+                return 3  # Cook lunch
+            elif "убрать" in task_name or "посуду" in task_name:
+                return 4  # Clean after lunch
+        
+        # Dinner tasks
+        elif "ужин" in task_name:
+            if "приготовить" in task_name:
+                return 5  # Cook dinner
+            elif "убрать" in task_name or "посуду" in task_name:
+                return 6  # Clean after dinner
+        
+        # Household tasks (last) - specific order
+        elif "полы" in task_name and ("пылесос" in task_name or "помыть" in task_name):
+            return 7  # Floor cleaning first
+        elif "туалет" in task_name:
+            return 8  # Toilets second
+        elif "поверхност" in task_name:
+            return 9  # Surfaces last
+        
+        # Other tasks
+        else:
+            return 10
+    
+    return sorted(duties, key=get_meal_order)
 
 
 async def duty_schedule_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -23,6 +65,7 @@ async def duty_schedule_callback(update: Update, context: ContextTypes.DEFAULT_T
     keyboard = [
         [InlineKeyboardButton("📋 Мой график", callback_data="my_duties")],
         [InlineKeyboardButton("📅 График на месяц", callback_data="monthly_schedule")],
+        [InlineKeyboardButton("📅 Текущая неделя", callback_data="current_week_schedule")],
         [InlineKeyboardButton("✅ Отметить выполнение", callback_data="mark_completed")],
         [InlineKeyboardButton("🔄 Сгенерировать график", callback_data="generate_schedule")],
     ]
@@ -115,12 +158,19 @@ async def monthly_schedule_callback(update: Update, context: ContextTypes.DEFAUL
         else:
             text = f"📅 **График на {today.strftime('%B %Y')}**\n\n"
             
-            # Group by week for better display
+            # Show only current and future weeks to avoid message being too long
             current_date = start_date
             week_num = 1
             
             while current_date <= end_date:
                 week_end = min(current_date + timedelta(days=6), end_date)
+                
+                # Skip past weeks (only show current week and future weeks)
+                if week_end < today:
+                    current_date += timedelta(days=7)
+                    week_num += 1
+                    continue
+                
                 text += f"**Неделя {week_num}** ({current_date.strftime('%d.%m')} - {week_end.strftime('%d.%m')}):\n"
                 
                 for i in range(7):
@@ -133,7 +183,9 @@ async def monthly_schedule_callback(update: Update, context: ContextTypes.DEFAUL
                     
                     if date_str in schedules:
                         text += f"  {day_name} {check_date.strftime('%d.%m')}:\n"
-                        for duty in schedules[date_str]:
+                        # Sort duties in logical meal order
+                        sorted_duties = sort_duties_by_meal_order(schedules[date_str])
+                        for duty in sorted_duties:
                             status = "✅" if duty.is_completed else "⏳"
                             user_name = duty.assigned_user.first_name or duty.assigned_user.username or "Неизвестно"
                             text += f"    {status} {duty.task.name} - {user_name}\n"
@@ -141,6 +193,63 @@ async def monthly_schedule_callback(update: Update, context: ContextTypes.DEFAUL
                 text += "\n"
                 current_date += timedelta(days=7)
                 week_num += 1
+        
+        keyboard = back_keyboard("duty_schedule")
+        
+        # Check if message is too long (Telegram limit is 4096 characters)
+        if len(text) > 4000:
+            # Truncate and add note
+            text = text[:3900] + "\n\n... (сообщение обрезано, показаны только ближайшие недели)"
+        
+        await query.edit_message_text(
+            text, 
+            reply_markup=keyboard,
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        await query.edit_message_text(f"❌ Ошибка: {str(e)}")
+    finally:
+        db.close()
+
+
+async def current_week_schedule_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show current week duty schedule only"""
+    query = update.callback_query
+    await query.answer()
+    
+    db = next(get_db())
+    try:
+        # Get current week
+        today = date.today()
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        # Get schedules for current week
+        schedules = DutyService.get_schedule_for_date_range(db, start_of_week, end_of_week)
+        
+        text = f"📅 **График на текущую неделю**\n"
+        text += f"📅 {start_of_week.strftime('%d.%m')} - {end_of_week.strftime('%d.%m.%Y')}\n\n"
+        
+        if not schedules:
+            text += "🎉 На этой неделе нет дежурств!"
+        else:
+            current_date = start_of_week
+            while current_date <= end_of_week:
+                date_str = current_date.strftime("%Y-%m-%d")
+                day_name = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][current_date.weekday()]
+                
+                if date_str in schedules:
+                    text += f"**{day_name} {current_date.strftime('%d.%m')}:**\n"
+                    # Sort duties in logical meal order
+                    sorted_duties = sort_duties_by_meal_order(schedules[date_str])
+                    for duty in sorted_duties:
+                        status = "✅" if duty.is_completed else "⏳"
+                        user_name = duty.assigned_user.first_name or duty.assigned_user.username or "Неизвестно"
+                        text += f"  {status} {duty.task.name} - {user_name}\n"
+                    text += "\n"
+                
+                current_date += timedelta(days=1)
         
         keyboard = back_keyboard("duty_schedule")
         await query.edit_message_text(

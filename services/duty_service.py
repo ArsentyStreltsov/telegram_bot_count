@@ -33,20 +33,30 @@ class DutyService:
             {"name": "Вынос мусора", "description": "Вынести мусор и зарядить новые пакеты",
              "is_weekday_only": True, "frequency_days": 2, "task_type": DutyTaskType.OTHER},
             
-            # Выходные
+            # Выходные - готовка
             {"name": "Приготовить завтрак", "description": "Приготовить завтрак для всей семьи",
              "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.COOKING},
-            {"name": "Убрать посуду после завтрака", "description": "Помыть посуду после завтрака",
-             "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.CLEANING},
             {"name": "Приготовить обед", "description": "Приготовить обед для всей семьи",
              "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.COOKING},
+            {"name": "Приготовить ужин", "description": "Приготовить ужин для всей семьи в выходные",
+             "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.COOKING},
+            
+            # Выходные - уборка посуды
+            {"name": "Убрать посуду после завтрака", "description": "Помыть посуду после завтрака",
+             "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.CLEANING},
             {"name": "Убрать посуду после обеда", "description": "Помыть посуду после обеда",
              "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.CLEANING},
-            {"name": "Уборка пылесосом", "description": "Пропылесосить все комнаты",
-             "is_weekend_only": True, "frequency_days": 7, "task_type": DutyTaskType.CLEANING},
-            {"name": "Протереть окна/зеркала", "description": "Протереть все окна и зеркала",
-             "is_weekend_only": True, "frequency_days": 7, "task_type": DutyTaskType.CLEANING},
+            {"name": "Убрать посуду после ужина", "description": "Помыть посуду после ужина в выходные",
+             "is_weekend_only": True, "frequency_days": 1, "task_type": DutyTaskType.CLEANING},
+            
+            # Выходные - домашние дела
+            {"name": "Пропылесосить полы", "description": "Пропылесосить все комнаты",
+             "is_weekend_only": True, "frequency_days": 14, "task_type": DutyTaskType.CLEANING},
+            {"name": "Помыть полы", "description": "Помыть полы во всех комнатах",
+             "is_weekend_only": True, "frequency_days": 14, "task_type": DutyTaskType.CLEANING},
             {"name": "Убрать туалеты", "description": "Помыть туалеты, раковины, зеркала",
+             "is_weekend_only": True, "frequency_days": 7, "task_type": DutyTaskType.CLEANING},
+            {"name": "Протереть поверхности", "description": "Протереть все поверхности, окна, зеркала",
              "is_weekend_only": True, "frequency_days": 7, "task_type": DutyTaskType.CLEANING},
         ]
         
@@ -150,6 +160,11 @@ class DutyService:
                         user_queue.rotate(-1)
                         continue
                     
+                    # Проверка ограничений на задания
+                    if not DutyService._can_user_do_task(user, task):
+                        user_queue.rotate(-1)
+                        continue
+                    
                     # Кандидат годится
                     candidates.append(user)
                     user_queue.rotate(-1)
@@ -159,7 +174,8 @@ class DutyService:
                     if is_weekend or DutyService.ALLOW_OVER_ASSIGN_WEEKDAYS:
                         # Ослабим правило по будням при включенном флаге: разрешим 2 задачи,
                         # либо на выходных всегда можно больше 1.
-                        candidates = list(users)
+                        # Но все равно применяем ограничения на задания
+                        candidates = [u for u in users if DutyService._can_user_do_task(u, task)]
                     else:
                         continue  # пропускаем задачу
                 
@@ -197,6 +213,26 @@ class DutyService:
         return DutyService._group_schedules_by_date(db, start_date, end_date)
     
     @staticmethod
+    def _can_user_do_task(user: User, task: DutyTask) -> bool:
+        """Check if user can be assigned to specific task based on restrictions"""
+        user_name = user.first_name or user.username or ""
+        task_name = task.name.lower()
+        
+        # Мама и Даша никогда не выносят мусор
+        if "мусор" in task_name and user_name.lower() in ["мама", "даша"]:
+            return False
+        
+        # Мытье полов и пылесосом только Сеня или Миша
+        if any(word in task_name for word in ["полы", "пылесос"]) and user_name.lower() not in ["сеня", "миша"]:
+            return False
+        
+        # Уборка туалетов и протирание поверхностей только Даша или Катя
+        if any(word in task_name for word in ["туалет", "поверхност"]) and user_name.lower() not in ["даша", "катя"]:
+            return False
+        
+        return True
+    
+    @staticmethod
     def _should_schedule_task(task: DutyTask, current_date: date, is_weekend: bool) -> bool:
         """Check if task should be scheduled for given date"""
         if task.is_weekday_only and is_weekend:
@@ -204,14 +240,51 @@ class DutyService:
         if task.is_weekend_only and not is_weekend:
             return False
         
-        # Check frequency
+        # Special logic for alternating vacuum/mop floors every 2 weeks
+        if task.name in ["Пропылесосить полы", "Помыть полы"]:
+            return DutyService._should_schedule_floor_cleaning(task, current_date)
+        
+        # Special logic for weekend household tasks - only schedule on Saturday
+        if task.name in ["Убрать туалеты", "Протереть поверхности"]:
+            # Schedule these tasks only on Saturday (weekday 5) for weekly frequency
+            if task.frequency_days == 7:
+                return current_date.weekday() == 5
+            return False
+        
+        # Check frequency for other tasks
         if task.frequency_days > 1:
-            # Привязка к началу месяца (можно заменить на anchor_date при необходимости)
-            days_since_start = (current_date - date(current_date.year, current_date.month, 1)).days
-            if days_since_start % task.frequency_days != 0:
-                return False
+            # For weekly tasks (7 days), check if it's the right day of the week
+            if task.frequency_days == 7:
+                # Schedule on Saturday (weekday 5) for weekly tasks
+                return current_date.weekday() == 5
+            else:
+                # For other frequencies, use month-based logic
+                days_since_start = (current_date - date(current_date.year, current_date.month, 1)).days
+                return days_since_start % task.frequency_days == 0
         
         return True
+    
+    @staticmethod
+    def _should_schedule_floor_cleaning(task: DutyTask, current_date: date) -> bool:
+        """Check if floor cleaning task should be scheduled (alternating every 2 weeks, only on Saturday)"""
+        # Only schedule on Saturday (weekday 5)
+        if current_date.weekday() != 5:
+            return False
+            
+        # Calculate week number since a reference date (e.g., January 1, 2024)
+        reference_date = date(2024, 1, 1)
+        days_since_reference = (current_date - reference_date).days
+        week_number = days_since_reference // 7
+        
+        # Alternate every 2 weeks: even weeks = vacuum, odd weeks = mop
+        if task.name == "Пропылесосить полы":
+            # Schedule vacuuming on even weeks (0, 2, 4, 6, ...)
+            return week_number % 2 == 0
+        elif task.name == "Помыть полы":
+            # Schedule mopping on odd weeks (1, 3, 5, 7, ...)
+            return week_number % 2 == 1
+        
+        return False
     
     @staticmethod
     def _group_schedules_by_date(db: Session, start_date: date, end_date: date) -> Dict[str, List[DutySchedule]]:
