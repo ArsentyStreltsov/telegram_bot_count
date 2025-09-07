@@ -56,7 +56,7 @@ def get_db():
 def init_db():
     """Initialize database tables"""
     # Import models to ensure they are registered
-    from models import User, Profile, ProfileMember, ShoppingItem, TodoItem, Expense, ExpenseAllocation, ExchangeRate, MonthSnapshot
+    from models import User, Profile, ProfileMember, ShoppingItem, TodoItem, Expense, ExpenseAllocation, ExchangeRate, MonthSnapshot, DutyTask, DutySchedule
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
@@ -66,6 +66,14 @@ def init_db():
     
     # Force create hardcoded users if they don't exist
     force_create_users()
+    
+    # Initialize duty tasks if they don't exist
+    from services.duty_service import DutyService
+    db = next(get_db())
+    try:
+        DutyService.initialize_default_tasks(db)
+    finally:
+        db.close()
 
 def force_create_exchange_rates():
     """Force create exchange rates if they don't exist"""

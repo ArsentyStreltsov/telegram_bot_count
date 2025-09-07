@@ -35,6 +35,10 @@ from handlers.reports import (
     delete_expense_confirmation_callback
 )
 from handlers.commands import set_rate_command
+from handlers.duty import (
+    duty_schedule_callback, my_duties_callback, monthly_schedule_callback,
+    mark_completed_callback, complete_duty_callback, generate_schedule_callback
+)
 
 # Load environment variables
 load_dotenv()
@@ -116,6 +120,14 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(report_callback, pattern="^report$"))
     application.add_handler(CallbackQueryHandler(delete_expenses_callback, pattern="^delete_expenses$"))
     application.add_handler(CallbackQueryHandler(delete_expense_confirmation_callback, pattern="^delete_expense_"))
+    
+    # Duty schedule handlers
+    application.add_handler(CallbackQueryHandler(duty_schedule_callback, pattern="^duty_schedule$"))
+    application.add_handler(CallbackQueryHandler(my_duties_callback, pattern="^my_duties$"))
+    application.add_handler(CallbackQueryHandler(monthly_schedule_callback, pattern="^monthly_schedule$"))
+    application.add_handler(CallbackQueryHandler(mark_completed_callback, pattern="^mark_completed$"))
+    application.add_handler(CallbackQueryHandler(complete_duty_callback, pattern="^complete_duty_"))
+    application.add_handler(CallbackQueryHandler(generate_schedule_callback, pattern="^generate_schedule$"))
     
     # Message handlers for text input
     application.add_handler(MessageHandler(
