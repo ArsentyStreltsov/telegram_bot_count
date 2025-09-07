@@ -4,7 +4,7 @@ Database models for household expenses tracking
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, Boolean, 
-    ForeignKey, Text, Enum, Date, BigInteger
+    ForeignKey, Text, Enum, Date, BigInteger, UniqueConstraint, Index
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,6 +22,12 @@ class ExpenseCategory(enum.Enum):
     FOOD = "Продукты"
     ALCOHOL = "Алкоголь"
     OTHER = "Другое"
+
+class DutyTaskType(str, enum.Enum):
+    """Duty task types"""
+    COOKING = "cooking"
+    CLEANING = "cleaning"
+    OTHER = "other"
 
 class User(Base):
     """Telegram user"""
@@ -156,3 +162,46 @@ class MonthSnapshot(Base):
     
     # Relationships
     user = relationship("User")
+
+class DutyTask(Base):
+    """Duty task definition"""
+    __tablename__ = "duty_tasks"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    is_weekday_only = Column(Boolean, default=False)  # True if only for weekdays
+    is_weekend_only = Column(Boolean, default=False)  # True if only for weekends
+    frequency_days = Column(Integer, default=1)  # How often (1=daily, 2=every other day, etc.)
+    task_type = Column(Enum(DutyTaskType), default=DutyTaskType.OTHER, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    schedules = relationship("DutySchedule", back_populates="task")
+    
+    __table_args__ = (
+        Index("ix_duty_tasks_type", "task_type"),
+    )
+
+class DutySchedule(Base):
+    """Duty schedule for specific date and task"""
+    __tablename__ = "duty_schedules"
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey("duty_tasks.id"), nullable=False)
+    assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    is_completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    task = relationship("DutyTask", back_populates="schedules")
+    assigned_user = relationship("User")
+    
+    __table_args__ = (
+        UniqueConstraint("task_id", "date", name="uq_task_per_date"),
+        Index("ix_user_date", "assigned_user_id", "date"),
+        Index("ix_date", "date"),
+    )
