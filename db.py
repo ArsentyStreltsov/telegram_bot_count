@@ -11,8 +11,7 @@ from dotenv import load_dotenv
 if os.path.exists('env.production'):
     load_dotenv('env.production')
 
-# Create database directory if it doesn't exist
-os.makedirs('data', exist_ok=True)
+# Database directory creation removed - using Railway PostgreSQL
 
 # Database URL
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/expenses.db')

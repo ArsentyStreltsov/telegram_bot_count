@@ -55,26 +55,22 @@ def sort_duties_by_meal_order(duties: List[DutySchedule]) -> List[DutySchedule]:
 
 
 async def duty_schedule_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle duty schedule button"""
+    """Handle duty schedule button - пока в разработке"""
     query = update.callback_query
     await query.answer()
     
-    text = "📅 **График дежурств**\n\n"
-    text += "Выберите действие:"
+    text = "🚧 **График дежурств**\n\n"
+    text += "Раздел пока в разработке, но пока анекдот:\n\n"
+    text += "Жарятся как-то 2 сосиски на сковородке и одна другой говорит:\n"
+    text += "— Да, что-то тут становится жарковато\n\n"
+    text += "Вторая отвечает:\n"
+    text += "— Емае, говорящая сосиска! 😄"
     
-    keyboard = [
-        [InlineKeyboardButton("📋 Мой график", callback_data="my_duties")],
-        [InlineKeyboardButton("📅 График на месяц", callback_data="monthly_schedule")],
-        [InlineKeyboardButton("📅 Текущая неделя", callback_data="current_week_schedule")],
-        [InlineKeyboardButton("✅ Отметить выполнение", callback_data="mark_completed")],
-        [InlineKeyboardButton("🔄 Сгенерировать график", callback_data="generate_schedule")],
-    ]
-    keyboard.append(back_keyboard("main_menu").inline_keyboard[0])
+    keyboard = back_keyboard("main_menu")
     
     await query.edit_message_text(
         text, 
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='Markdown'
+        reply_markup=keyboard
     )
 
 
