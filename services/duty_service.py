@@ -219,7 +219,7 @@ class DutyService:
         task_name = task.name.lower()
         
         # Мама и Даша никогда не выносят мусор
-        if "мусор" in task_name and user_name.lower() in ["мама", "даша"]:
+        if "мусор" in task_name and user_name.lower() in ["катя", "даша"]:
             return False
         
         # Мытье полов и пылесосом только Сеня или Миша

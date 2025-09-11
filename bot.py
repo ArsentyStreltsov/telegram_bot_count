@@ -34,7 +34,7 @@ from handlers.reports import (
     report_callback, delete_expenses_callback, 
     delete_expense_confirmation_callback
 )
-from handlers.commands import set_rate_command
+from handlers.commands import set_rate_command, addexpence_command, addexpence_advanced_command
 from handlers.duty import (
     duty_schedule_callback, my_duties_callback, monthly_schedule_callback,
     current_week_schedule_callback, mark_completed_callback, complete_duty_callback, generate_schedule_callback
@@ -62,6 +62,8 @@ def setup_commands(application: Application):
         BotCommand("shopping", "🛒 Список покупок"),
         BotCommand("todo", "📝 Список дел"),
         BotCommand("expenses", "💰 Расходы"),
+        BotCommand("addexpence", "➕ Добавить расход за другого"),
+        BotCommand("addexpence_advanced", "➕ Добавить расход с выбором участников"),
         BotCommand("report", "📊 Отчет"),
         BotCommand("set_rate", "💱 Установить курс валюты"),
         BotCommand("help", "❓ Справка"),
@@ -91,6 +93,8 @@ def setup_handlers(application: Application):
     application.add_handler(CommandHandler("db_info", db_info_command))
     application.add_handler(CommandHandler("group_balances", group_balances_command))
     application.add_handler(CommandHandler("set_rate", set_rate_command))
+    application.add_handler(CommandHandler("addexpence", addexpence_command))
+    application.add_handler(CommandHandler("addexpence_advanced", addexpence_advanced_command))
     
     # Callback query handlers
     application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^main_menu$"))
