@@ -7,12 +7,19 @@ from sqlalchemy.orm import Session
 from db import get_db
 from handlers.base import BaseHandler
 from utils.keyboards import back_keyboard, category_keyboard
+from utils.access_control import AccessControl
 from services.shopping_service import ShoppingService
 from models import ExpenseCategory, Profile
 from handlers.todo import handle_todo_input
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all text messages based on user state"""
+    # Check access first
+    if not AccessControl.check_access(update, context):
+        AccessControl.log_access_attempt(update, context)
+        await AccessControl.deny_access_message(update, context)
+        return
+    
     user_id = update.effective_user.id
     text = update.message.text
     

@@ -8,10 +8,17 @@ from db import get_db
 from handlers.base import BaseHandler
 from utils.keyboards import main_menu_keyboard
 from utils.texts import get_welcome_message
+from utils.access_control import AccessControl, require_access, require_access_for_callback
 from models import User, Profile, ProfileMember
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
+    # Check access first
+    if not AccessControl.check_access(update, context):
+        AccessControl.log_access_attempt(update, context)
+        await AccessControl.deny_access_message(update, context)
+        return
+    
     # Get database session
     db = next(get_db())
     
@@ -36,6 +43,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     finally:
         db.close()
 
+@require_access_for_callback
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle main menu callback"""
     query = update.callback_query
@@ -65,6 +73,7 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     finally:
         db.close()
 
+@require_access
 async def shopping_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /shopping command"""
     from utils.keyboards import shopping_actions_keyboard
@@ -74,6 +83,7 @@ async def shopping_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(text, reply_markup=keyboard)
 
+@require_access
 async def todo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /todo command"""
     from handlers.todo import todo_actions_keyboard
@@ -83,6 +93,7 @@ async def todo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(text, reply_markup=keyboard)
 
+@require_access
 async def expenses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /expenses command"""
     from utils.keyboards import expenses_menu_keyboard
@@ -92,6 +103,7 @@ async def expenses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(text, reply_markup=keyboard)
 
+@require_access
 async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /report command"""
     from handlers.reports import report_callback
@@ -116,6 +128,7 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await report_callback(mock_update, context)
 
+@require_access
 async def balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /balances command - show group balances"""
     from services.group_balance import GroupBalanceService
@@ -129,6 +142,7 @@ async def balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     finally:
         db.close()
 
+@require_access
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /help command"""
     from utils.texts import get_help_message
@@ -137,6 +151,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(help_text)
 
+@require_access
 async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /update_commands command - force update bot commands"""
     try:
@@ -167,6 +182,7 @@ async def update_commands_command(update: Update, context: ContextTypes.DEFAULT_
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка при обновлении команд: {str(e)}")
 
+@require_access
 async def group_balances_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /group_balances command - show group balances"""
     from services.group_balance import GroupBalanceService
@@ -180,6 +196,7 @@ async def group_balances_command(update: Update, context: ContextTypes.DEFAULT_T
     finally:
         db.close()
 
+@require_access
 async def db_info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /db_info command - show database information"""
     db = next(get_db())

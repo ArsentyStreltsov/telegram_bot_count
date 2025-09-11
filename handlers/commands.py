@@ -10,9 +10,11 @@ from models import ExchangeRate, Currency, ExpenseCategory, User, Profile
 from services.expense_service import ExpenseService
 from services.flexible_split import FlexibleSplitService
 from utils.texts import get_category_name, get_currency_name, format_amount
+from utils.access_control import require_access
 from datetime import datetime
 import re
 
+@require_access
 async def set_rate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /set_rate command"""
     if not context.args or len(context.args) != 2:
@@ -77,6 +79,7 @@ async def set_rate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     finally:
         db.close()
 
+@require_access
 async def addexpence_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /addexpence command with parameters: currency,amount,category,custom_name,payer_name"""
     if not context.args or len(context.args) < 4:
@@ -217,6 +220,7 @@ async def addexpence_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     finally:
         db.close()
 
+@require_access
 async def addexpence_advanced_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /addexpence_advanced command with participant selection"""
     if not context.args or len(context.args) < 4:

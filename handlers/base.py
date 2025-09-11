@@ -6,13 +6,18 @@ from sqlalchemy.orm import Session
 from models import User
 from db import get_db
 from utils.texts import get_welcome_message
+from utils.access_control import AccessControl
 
 class BaseHandler:
     """Base handler with common functionality"""
     
     @staticmethod
     def get_or_create_user(db: Session, telegram_user) -> User:
-        """Get existing user or create new one"""
+        """Get existing user or create new one (only for allowed users)"""
+        # Check if user is allowed to use the bot
+        if not AccessControl.is_user_allowed(telegram_user.id):
+            raise PermissionError(f"User {telegram_user.id} is not allowed to use this bot")
+        
         # Сначала ищем по telegram_id (числовой ID)
         user = db.query(User).filter(User.telegram_id == telegram_user.id).first()
         
@@ -33,7 +38,7 @@ class BaseHandler:
                 db.commit()
                 print(f"✅ Обновлены данные пользователя: {user.first_name} (ID: {user.telegram_id})")
         else:
-            # Пользователь не найден - создаем нового
+            # Пользователь не найден - создаем нового (только для разрешенных)
             user = User(
                 telegram_id=telegram_user.id,
                 username=telegram_user.username,
